@@ -12,12 +12,6 @@ let error ?(loc=dummy_loc) f =
 
 let function_table = Hashtbl.create 10
 
-let print_list lst =
-  List.iter (fun x -> Printf.printf "%s\n" x.id) lst
-
-let print_hashtable_keys hashtable =
-  Hashtbl.iter (fun key _ -> Printf.printf "%s\n" key) hashtable
-
 let binop_to_string (op : binop) : string =
   List.assoc op
     [Badd, "+"; Bsub, "-"; Bmul, "*"; Bdiv, "/"; Bmod, "%";
@@ -33,13 +27,11 @@ let ctype_to_string (e : constant) : string =
 
 let rec type_expr ctx = function
   | Ecst c -> TEcst c
-
   | Eident id ->
     if Hashtbl.mem ctx id.id then
       TEvar ({ v_name = id.id; v_ofs = 0 })
     else
       error ~loc:id.loc "(typing) variable '%s' not defined" id.id
-
   | Ebinop (op, e1, e2) ->
     let te1 = type_expr ctx e1 in
     let te2 = type_expr ctx e2 in
@@ -58,7 +50,6 @@ let rec type_expr ctx = function
     | TEcst c, TElist l -> error "(typing) '%s' not supported between instances of 'list' and '%s'" (binop_to_string op) (ctype_to_string c)
     | TElist l, TEcst c -> error "(typing) '%s' not supported between instances of '%s' and 'list'" (ctype_to_string c) (binop_to_string op)
     | _, _ -> TEbinop (op, te1, te2))
-    
   | Eunop (op, e) ->
     let te = type_expr ctx e in
     (match op, te with
@@ -67,7 +58,6 @@ let rec type_expr ctx = function
     | Uneg, TElist l -> error "(typing) bad operand type for unary -: 'list'"
     | Uneg, _ -> TEunop (op, te)
     | Unot, _ -> TEunop (op, te))
-
   | Ecall (fn, args) ->
     (match fn.id with
     | "list" ->
@@ -97,45 +87,26 @@ let rec type_expr ctx = function
             error ~loc:fn.loc "(typing) function '%s' expected exactly %i argument(s), got %i" fn.id (List.length callable.fn_params) (List.length args)
         else
           error ~loc:fn.loc "(typing) name '%s' is not defined" fn.id))
-
-  | Elist elist ->
-      TElist (List.map (type_expr ctx) elist)
-
-  | Eget (e1, e2) ->
-      let te1 = type_expr ctx e1 in
-      let te2 = type_expr ctx e2 in
-      (match te1, te2 with
-      | _, _ -> TEget (te1, te2))
+  | Elist elist -> TElist (List.map (type_expr ctx) elist)
+  | Eget (e1, e2) -> TEget (type_expr ctx e1, type_expr ctx e2)
 
 and type_stmt ctx = function
   | Sif (e, s1, s2) ->
     TSif (type_expr ctx e, type_stmt ctx s1, type_stmt ctx s2)
-  
   | Sreturn e ->
     TSreturn (type_expr ctx e)
-
   | Sassign (id, e) ->
     let new_var = {v_name = id.id; v_ofs = 0} in
     Hashtbl.add ctx id.id new_var;
     TSassign (new_var, type_expr ctx e)
-
-  | Sprint e ->
-    TSprint (type_expr ctx e)
-
-  | Sblock stmts ->
-    let tstmts = List.map (type_stmt ctx) stmts in
-    TSblock tstmts
-
+  | Sprint e -> TSprint (type_expr ctx e)
+  | Sblock stmts -> TSblock (List.map (type_stmt ctx) stmts)
   | Sfor (id, e, s) ->
     let new_var = {v_name = id.id; v_ofs = 0} in
     Hashtbl.add ctx id.id new_var;
     TSfor (new_var, type_expr ctx e, type_stmt ctx s)
-
-  | Seval e ->
-    TSeval (type_expr ctx e)
-
-  | Sset (e1, e2, e3) ->
-    TSset (type_expr ctx e1, type_expr ctx e2, type_expr ctx e3)
+  | Seval e -> TSeval (type_expr ctx e)
+  | Sset (e1, e2, e3) -> TSset (type_expr ctx e1, type_expr ctx e2, type_expr ctx e3)
 
 let type_def global def =
   let (name, params, stmt) = def in
