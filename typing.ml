@@ -66,9 +66,9 @@ let rec type_expr ctx = function
             (match args2 with
             | [Ecst e] -> (match e with
               | Cint _ -> TErange (TEcst e)
-              | _ -> error ~loc:fn.loc "(typing) range takes 'int' argument")
+              | _ -> error ~loc:fn2.loc "(typing) range takes 'int' argument")
             | [e] when List.length args2 = 1 -> TErange (type_expr ctx e)
-            | _ -> error ~loc:fn.loc "(typing) range expected exactly 1 argument(s), got %i" (List.length args2))
+            | _ -> error ~loc:fn2.loc "(typing) range expected exactly 1 argument(s), got %i" (List.length args2))
         | _ -> error ~loc:fn.loc "(typing) list must be called on range()"
         )
     | "range" -> error ~loc:fn.loc "(typing) range cannot be used outside of list()"
@@ -110,17 +110,20 @@ and type_stmt ctx = function
 
 let type_def global def =
   let (name, params, stmt) = def in
-  let local = Hashtbl.create (Hashtbl.length global) in
-  Hashtbl.iter (fun key value -> Hashtbl.add local key value) global;
-  List.iter (fun param -> Hashtbl.add local param.id { v_name = param.id; v_ofs = 0 }) params;
-  let duplicates = List.find_opt (fun id -> List.length (List.filter (fun p -> p.id = id.id) params) > 1) params in
-  match duplicates with
-  | Some(dup) -> error ~loc:dup.loc "(typing) duplicate argument '%s' in function definition" dup.id
-  | None ->
-  let tparams = List.map (fun param -> { v_name = param.id; v_ofs = 0 }) params in
-  let fn = {fn_name = name.id; fn_params=tparams} in
-  Hashtbl.add function_table name.id fn;
-  (fn, type_stmt local stmt)
+  if List.mem name.id ["len"; "range"; "list"; "print"] || Hashtbl.mem function_table name.id then
+    error  ~loc:name.loc "(typing) function '%s' already defined" name.id
+  else
+    let local = Hashtbl.create (Hashtbl.length global) in
+    Hashtbl.iter (fun key value -> Hashtbl.add local key value) global;
+    List.iter (fun param -> Hashtbl.add local param.id { v_name = param.id; v_ofs = 0 }) params;
+    let duplicates = List.find_opt (fun id -> List.length (List.filter (fun p -> p.id = id.id) params) > 1) params in
+    match duplicates with
+    | Some(dup) -> error ~loc:dup.loc "(typing) duplicate argument '%s' in function definition" dup.id
+    | None ->
+    let tparams = List.map (fun param -> { v_name = param.id; v_ofs = 0 }) params in
+    let fn = {fn_name = name.id; fn_params=tparams} in
+    Hashtbl.add function_table name.id fn;
+    (fn, type_stmt local stmt)
 
 let rec type_defs global defs =
   match defs with
