@@ -6,12 +6,21 @@ let debug = ref false
 
 let is_false v =
   match v with
-  | Cnone -> false
+  | Cnone -> true
   | Cbool v -> not v
   | Cint v -> Int64.equal v Int64.zero
   | Cstring v -> v = ""
 
 let is_true v = not (is_false v)
+
+let inv_op v =
+  match v with
+  | Beq -> Bneq
+  | Bneq -> Beq
+  | Ble -> Bgt
+  | Bgt -> Ble
+  | Blt -> Bge
+  | Bge -> Blt
 
 let rec simplify_texpr = function
   | TEcst c -> TEcst c
@@ -49,6 +58,9 @@ let rec simplify_texpr = function
     | Badd, TEbinop(Badd, x, TEcst(Cint n1)), TEcst(Cint n2) -> TEbinop(Badd, TEcst(Cint(Int64.add n1 n2)), x) (* (x + n1) + n2 *)
     | Badd, TEcst(Cint n2), TEbinop(Badd, TEcst(Cint n1), x) -> TEbinop(Badd, TEcst(Cint(Int64.add n1 n2)), x) (* n2 + (n1 + x) *)
     | Badd, TEcst(Cint n2), TEbinop(Badd, x, TEcst(Cint n1)) -> TEbinop(Badd, TEcst(Cint(Int64.add n1 n2)), x) (* n2 + (x + n1) *)
+
+    | (Beq | Bneq as op), TEunop(Uneg, x), TEcst(Cint n) -> TEbinop(op, x, TEcst(Cint (Int64.sub Int64.zero n))) (* -x rel_equiv cst *)
+    | (Beq | Bneq as op), TEcst(Cint n), TEunop(Uneg, x) -> TEbinop(op, TEcst(Cint (Int64.sub Int64.zero n)), x) (* cst rel_equiv -x *)
 
     | (Beq | Bneq | Blt | Ble | Bgt | Bge as op), TEcst(Cint n2), TEbinop(Bsub, TEcst(Cint n1), x) -> TEbinop(op, x, TEcst(Cint(Int64.sub n1 n2))) (* n2 op (n1 - x) *)
     | (Beq | Bneq | Blt | Ble | Bgt | Bge as op), TEcst(Cint n2), TEbinop(Badd, TEcst(Cint n1), x) -> TEbinop(op, TEcst(Cint(Int64.sub n2 n1)), x) (* n2 op (n1 + x) *)
@@ -125,12 +137,7 @@ let rec simplify_texpr = function
     | Uneg, TEbinop(Bsub, x, y) -> TEbinop(Bsub, y, x) (* -(x - y) *)
     | Uneg, TEunop(Uneg, x) -> x (* -(-x) *)
     | Unot, TEunop(Unot, x) -> x (* not not x *)
-    | Unot, TEbinop(Beq, x, y) -> TEbinop(Bneq, x, y)
-    | Unot, TEbinop(Bneq, x, y) -> TEbinop(Beq, x, y)
-    | Unot, TEbinop(Blt, x, y) -> TEbinop(Bge, x, y)
-    | Unot, TEbinop(Ble, x, y) -> TEbinop(Bgt, x, y)
-    | Unot, TEbinop(Bgt, x, y) -> TEbinop(Ble, x, y)
-    | Unot, TEbinop(Bge, x, y) -> TEbinop(Blt, x, y)
+    | Unot, TEbinop(Beq | Bneq | Blt | Ble | Bgt | Bge as op, x, y) -> TEbinop(inv_op op, x, y)
     | _, _ -> TEunop (op, te))
   | TEcall (fn, args) -> 
     let sargs = List.map (fun arg -> simplify_texpr arg) args in
