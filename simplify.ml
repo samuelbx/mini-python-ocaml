@@ -20,7 +20,6 @@ let rec simplify_texpr = function
     let se1 = simplify_texpr e1 in
     let se2 = simplify_texpr e2 in
     (match op, se1, se2 with
-
     | Badd, TEcst(Cstring s1), TEcst(Cstring s2) -> TEcst(Cstring (s1 ^ s2))
     | Badd, TElist l1, TElist l2 -> TElist(l1 @ l2)
 
@@ -103,6 +102,18 @@ let rec simplify_texpr = function
     | Bdiv, TEbinop(Bdiv, x, TEcst(Cint n1)), TEcst(Cint n2) -> TEbinop(Bmul, TEcst(Cint(Int64.div (Int64.div Int64.one n2) n1)), x) (* (x / n1) / n2 *)
     | Bdiv, TEcst(Cint n2), TEbinop(Bdiv, TEcst(Cint n1), x) -> TEbinop(Bmul, TEcst(Cint(Int64.div n2 n1)), x) (* n2 / (n1 / x) *)
     | Bdiv, TEcst(Cint n2), TEbinop(Bdiv, x, TEcst(Cint n1)) -> TEbinop(Bdiv, TEcst(Cint(Int64.mul n1 n2)), x) (* n2 / (x / n1) *)
+
+    | Badd, TEcst(Cint i), x when Int64.equal Int64.zero i -> x
+    | Badd, x, TEcst(Cint i) when Int64.equal Int64.zero i -> x
+    | Bsub, TEcst(Cint i), x when Int64.equal Int64.zero i -> TEunop(Uneg, x)
+    | Bsub, x, TEcst(Cint i) when Int64.equal Int64.zero i -> x
+    | Bmul, TEcst(Cint i), x when Int64.equal Int64.one i -> x
+    | Bmul, x, TEcst(Cint i) when Int64.equal Int64.one i -> x
+    | Bdiv, x, TEcst(Cint i) when Int64.equal Int64.one i -> x
+
+    | Badd, TEunop(Uneg, x), y -> TEbinop(Bsub, y, x)
+    | Badd, y, TEunop(Uneg, x) -> TEbinop(Bsub, y, x)
+    | Bsub, y, TEunop(Uneg, x) -> TEbinop(Badd, x, y)
 
     | _, _, _ -> TEbinop (op, se1, se2))
   | TEunop (op, e) ->
