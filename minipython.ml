@@ -3,6 +3,7 @@ open Format
 open Lexing
 open Parser
 open Simplify
+open Ast
 
 let usage = "usage: mini-python [options] file.py"
 
@@ -44,6 +45,9 @@ let () =
     if !parse_only then exit 0;
     let f = Typing.file ~debug f in
     let f = Simplify.file ~debug f in
+    let str = Ast.string_of_tfile f in
+    if debug then
+      print_endline str;
     if !type_only then exit 0;
     let code = Compile.file ~debug f in
     let c = open_out (Filename.chop_suffix file ".py" ^ ".s") in
