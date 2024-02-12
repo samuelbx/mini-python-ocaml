@@ -29,14 +29,22 @@ let rec simplify_texpr = function
     let se1 = simplify_texpr e1 in
     let se2 = simplify_texpr e2 in
     (match op, se1, se2 with
+    | (Beq | Bneq | Blt | Ble | Bgt | Bge as op), TEunop(Uneg, x), TEunop(Uneg, y) -> TEbinop(inv_op op, x, y) (* (x * n1) op n2 *)
+    
     | Badd, TEcst(Cstring s1), TEcst(Cstring s2) -> TEcst(Cstring (s1 ^ s2))
     | Badd, TElist l1, TElist l2 -> TElist(l1 @ l2)
 
     | Badd, TEcst(Cint n1), TEcst(Cint n2) -> TEcst(Cint (Int64.add n1 n2))
     | Bsub, TEcst(Cint n1), TEcst(Cint n2) -> TEcst(Cint (Int64.sub n1 n2))
-    | Bmul, TEcst(Cint n1), TEcst(Cint n2) when Int64.equal n2 Int64.zero -> TEcst(Cint (Int64.div n1 n2))
-    | Bdiv, TEcst(Cint n1), TEcst(Cint n2) when Int64.equal n2 Int64.zero -> TEcst(Cint (Int64.rem n1 n2))
+    | Bmul, TEcst(Cint n1), TEcst(Cint n2) -> TEcst(Cint (Int64.mul n1 n2))
+    | Bdiv, TEcst(Cint n1), TEcst(Cint n2) when not(Int64.equal n2 Int64.zero) -> TEcst(Cint (Int64.div n1 n2))
+    | Bmod, TEcst(Cint n1), TEcst(Cint n2) when not(Int64.equal n2 Int64.zero) -> TEcst(Cint (Int64.rem n1 n2))
 
+    | Bmul, TEcst(Cint n), TEunop(Uneg, x) -> TEbinop(Bmul, TEcst(Cint(Int64.sub 0L n)), x)
+    | Bmul, TEunop(Uneg, x), TEcst(Cint n) -> TEbinop(Bmul, TEcst(Cint(Int64.sub 0L n)), x)
+    | Bdiv, TEcst(Cint n), TEunop(Uneg, x) -> TEbinop(Bdiv, TEcst(Cint(Int64.sub 0L n)), x)
+    | Bdiv, TEunop(Uneg, x), TEcst(Cint n) -> TEbinop(Bdiv, TEcst(Cint(Int64.sub 0L n)), x)
+    
     | Beq, TEcst b1, TEcst b2 -> TEcst(Cbool (b1 = b2))
     | Bneq, TEcst b1, TEcst b2 -> TEcst(Cbool (b1 <> b2))
     | Blt, TEcst b1, TEcst b2 -> TEcst(Cbool (b1 < b2))
@@ -53,6 +61,28 @@ let rec simplify_texpr = function
     | Bor, _, TElist b2 when List.length b2 <> 0 -> TEcst(Cbool true)
     | Band, TElist b1, _ when List.length b1 = 0 -> TEcst(Cbool false)
     | Band, _, TElist b2 when List.length b2 = 0 -> TEcst(Cbool false)
+
+    | Badd, TEcst(Cint 0L), x -> x
+    | Badd, x, TEcst(Cint 0L) -> x
+    | Bsub, TEcst(Cint 0L), x -> TEunop(Uneg, x)
+    | Bsub, x, TEcst(Cint 0L) -> x
+    | Bmul, TEcst(Cint 1L), x -> x
+    | Bmul, x, TEcst(Cint 1L) -> x
+    | Bmul, TEcst(Cint 0L), x -> TEcst(Cint(Int64.zero))
+    | Bmul, x, TEcst(Cint 0L) -> TEcst(Cint(Int64.zero))
+    | Bdiv, x, TEcst(Cint 1L) -> x
+
+    | Band, x, TEcst(y) when is_true(y) -> x
+    | Bor, x, TEcst(y) when is_false(y) -> x
+
+    | Badd, TEunop(Uneg, x), y -> TEbinop(Bsub, y, x)
+    | Badd, y, TEunop(Uneg, x) -> TEbinop(Bsub, y, x)
+    | Bsub, y, TEunop(Uneg, x) -> TEbinop(Badd, x, y)
+    | Bmul, TEunop(Uneg, x), TEunop(Uneg, y) -> TEbinop(Bmul, x, y)
+    | Bdiv, TEunop(Uneg, x), TEunop(Uneg, y) -> TEbinop(Bdiv, x, y)
+
+    | Band, TEunop(Unot, x), TEunop(Unot, y) -> TEunop(Unot, TEbinop(Bor, x, y)) (* not(x) & not(y) = not(x || y) *)
+    | Bor, TEunop(Unot, x), TEunop(Unot, y) -> TEunop(Unot, TEbinop(Band, x, y)) (* not(x) || not(y) = not(x && y) *)
 
     | Badd, TEbinop(Badd, TEcst(Cint n1), x), TEcst(Cint n2) -> TEbinop(Badd, TEcst(Cint(Int64.add n1 n2)), x) (* (n1 + x) + n2 *)
     | Badd, TEbinop(Badd, x, TEcst(Cint n1)), TEcst(Cint n2) -> TEbinop(Badd, TEcst(Cint(Int64.add n1 n2)), x) (* (x + n1) + n2 *)
@@ -79,7 +109,7 @@ let rec simplify_texpr = function
     | (Beq | Bneq | Blt | Ble | Bgt | Bge as op), TEcst(Cint n2), TEbinop(Bmul, x, TEcst(Cint n1)) -> TEbinop(op, TEcst(Cint(Int64.div n2 n1)), x) (* n2 op (x * n1) *)
     | (Beq | Bneq | Blt | Ble | Bgt | Bge as op), TEbinop(Bdiv, x, TEcst(Cint n1)), TEcst(Cint n2) -> TEbinop(op, x, TEcst(Cint(Int64.mul n1 n2))) (* (x / n1) op n2 *)
     | (Beq | Bneq | Blt | Ble | Bgt | Bge as op), TEbinop(Bmul, x, TEcst(Cint n1)), TEcst(Cint n2) -> TEbinop(op, x, TEcst(Cint(Int64.div n2 n1))) (* (x * n1) op n2 *)
-
+    
     | Badd, TEbinop(Bsub, TEcst(Cint n1), x), TEcst(Cint n2) -> TEbinop(Bsub, TEcst(Cint(Int64.add n1 n2)), x) (* (n1 - x) + n2 *)
     | Badd, TEbinop(Bsub, x, TEcst(Cint n1)), TEcst(Cint n2) -> TEbinop(Badd, TEcst(Cint(Int64.sub n2 n1)), x) (* (x - n1) + n2 *)
     | Badd, TEcst(Cint n2), TEbinop(Bsub, TEcst(Cint n1), x) -> TEbinop(Bsub, TEcst(Cint(Int64.add n1 n2)), x) (* n2 + (n1 - x) *)
@@ -115,23 +145,6 @@ let rec simplify_texpr = function
     | Bdiv, TEcst(Cint n2), TEbinop(Bdiv, TEcst(Cint n1), x) -> TEbinop(Bmul, TEcst(Cint(Int64.div n2 n1)), x) (* n2 / (n1 / x) *)
     | Bdiv, TEcst(Cint n2), TEbinop(Bdiv, x, TEcst(Cint n1)) -> TEbinop(Bdiv, TEcst(Cint(Int64.mul n1 n2)), x) (* n2 / (x / n1) *)
 
-    | Badd, TEcst(Cint i), x when Int64.equal Int64.zero i -> x
-    | Badd, x, TEcst(Cint i) when Int64.equal Int64.zero i -> x
-    | Bsub, TEcst(Cint i), x when Int64.equal Int64.zero i -> TEunop(Uneg, x)
-    | Bsub, x, TEcst(Cint i) when Int64.equal Int64.zero i -> x
-    | Bmul, TEcst(Cint i), x when Int64.equal Int64.one i -> x
-    | Bmul, x, TEcst(Cint i) when Int64.equal Int64.one i -> x
-    | Bdiv, x, TEcst(Cint i) when Int64.equal Int64.one i -> x
-
-    | Badd, TEunop(Uneg, x), y -> TEbinop(Bsub, y, x)
-    | Badd, y, TEunop(Uneg, x) -> TEbinop(Bsub, y, x)
-    | Bsub, y, TEunop(Uneg, x) -> TEbinop(Badd, x, y)
-    | Bmul, TEunop(Uneg, x), TEunop(Uneg, y) -> TEbinop(Bmul, x, y)
-    | Bdiv, TEunop(Uneg, x), TEunop(Uneg, y) -> TEbinop(Bdiv, x, y)
-
-    | Band, TEunop(Unot, x), TEunop(Unot, y) -> TEunop(Unot, TEbinop(Bor, x, y)) (* not(x) & not(y) = not(x || y) *)
-    | Bor, TEunop(Unot, x), TEunop(Unot, y) -> TEunop(Unot, TEbinop(Band, x, y)) (* not(x) || not(y) = not(x && y) *)
-
     | _, _, _ -> TEbinop (op, se1, se2))
   | TEunop (op, e) ->
     let te = simplify_texpr e in
@@ -145,9 +158,9 @@ let rec simplify_texpr = function
     | Unot, TEbinop(Beq | Bneq | Blt | Ble | Bgt | Bge as op, x, y) -> TEbinop(inv_op op, x, y)
     | _, _ -> TEunop (op, te))
   | TEcall (fn, args) -> 
-    let sargs = List.map (fun arg -> simplify_texpr arg) args in
+    let sargs = List.map simplify_texpr args in
     if fn.fn_name = "len" then
-      match args with
+      match sargs with
       | [TElist l] -> TEcst (Cint (Int64.of_int (List.length l)))
       | [TEcst(Cstring s)] -> TEcst (Cint (Int64.of_int (String.length s)))
       | _ -> TEcall (fn, sargs)
@@ -157,21 +170,28 @@ let rec simplify_texpr = function
   | TErange e -> TErange(simplify_texpr e)
   | TEget (e1, e2) -> TEget(simplify_texpr e1, simplify_texpr e2)
 
+and simplify_block stmts =
+  match stmts with
+  | [] -> []
+  | (TSblock block) :: rest -> (simplify_block block) @ (simplify_block rest)
+  | (TSreturn _) as ret_stmt :: _ -> [simplify_tstmt ret_stmt]
+  | stmt :: rest -> (simplify_tstmt stmt) :: (simplify_block rest)
+
 and simplify_tstmt = function
   | TSif (e, s1, s2) ->
     let ts1 = simplify_tstmt s1 in
     let ts2 = simplify_tstmt s2 in
     let te = simplify_texpr e in
     (match te with 
-    | TEcst c when is_true c -> TSblock([ts1])
-    | TEcst c when is_false c -> TSblock([ts2])
-    | TElist l when List.length l <> 0 -> TSblock([ts1])
-    | TElist l when List.length l = 0 -> TSblock([ts2])
+    | TEcst c when is_true c -> ts1
+    | TEcst c when is_false c -> ts2
+    | TElist l when List.length l <> 0 -> ts1
+    | TElist l when List.length l = 0 -> ts2
     | _-> TSif(te, ts1, ts2))
   | TSreturn e -> TSreturn (simplify_texpr e)
   | TSassign (v, e) -> TSassign (v, simplify_texpr e)
   | TSprint e -> TSprint (simplify_texpr e)
-  | TSblock stmts -> TSblock (List.map simplify_tstmt stmts)
+  | TSblock stmts -> TSblock(simplify_block(simplify_block stmts))
   | TSfor (v, e, s) -> TSfor (v, simplify_texpr e, simplify_tstmt s)
   | TSeval e -> TSeval (simplify_texpr e)
   | TSset (e1, e2, e3) -> TSset (simplify_texpr e1, simplify_texpr e2, simplify_texpr e3)
