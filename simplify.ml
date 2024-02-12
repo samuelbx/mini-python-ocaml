@@ -126,6 +126,11 @@ let rec simplify_texpr = function
     | Badd, TEunop(Uneg, x), y -> TEbinop(Bsub, y, x)
     | Badd, y, TEunop(Uneg, x) -> TEbinop(Bsub, y, x)
     | Bsub, y, TEunop(Uneg, x) -> TEbinop(Badd, x, y)
+    | Bmul, TEunop(Uneg, x), TEunop(Uneg, y) -> TEbinop(Bmul, x, y)
+    | Bdiv, TEunop(Uneg, x), TEunop(Uneg, y) -> TEbinop(Bdiv, x, y)
+
+    | Band, TEunop(Unot, x), TEunop(Unot, y) -> TEunop(Unot, TEbinop(Bor, x, y)) (* not(x) & not(y) = not(x || y) *)
+    | Bor, TEunop(Unot, x), TEunop(Unot, y) -> TEunop(Unot, TEbinop(Band, x, y)) (* not(x) || not(y) = not(x && y) *)
 
     | _, _, _ -> TEbinop (op, se1, se2))
   | TEunop (op, e) ->
