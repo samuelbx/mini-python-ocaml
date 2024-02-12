@@ -48,7 +48,7 @@ let rec type_expr ctx = function
       | Badd | Blt | Ble | Bgt | Bge | Beq | Bneq -> TEbinop (op, te1, te2)
       | _ -> error "(typing) '%s' not supported between instances of 'list' and 'list'" (binop_to_string op))
     | TEcst c, TElist l -> error "(typing) '%s' not supported between instances of 'list' and '%s'" (binop_to_string op) (ctype_to_string c)
-    | TElist l, TEcst c -> error "(typing) '%s' not supported between instances of '%s' and 'list'" (ctype_to_string c) (binop_to_string op)
+    | TElist l, TEcst c -> error "(typing) '%s' not supported between instances of '%s' and 'list'" (binop_to_string op) (ctype_to_string c)
     | _, _ -> TEbinop (op, te1, te2))
   | Eunop (op, e) ->
     let te = type_expr ctx e in
