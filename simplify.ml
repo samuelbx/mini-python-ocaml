@@ -21,6 +21,7 @@ let inv_op v =
   | Bgt -> Ble
   | Blt -> Bge
   | Bge -> Blt
+  | x -> x 
 
 let rec simplify_texpr = function
   | TEcst c -> TEcst c
