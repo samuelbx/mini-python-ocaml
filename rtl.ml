@@ -1,9 +1,4 @@
-(** Typing to RTL translator *)
-
-(**
-   instruction are on x86-64 operation,source,destination format
-   with dest = dest (operation) source
-*)
+open Ast
 open Rtltree
 open Format
 exception Error of string
@@ -11,254 +6,202 @@ exception Error of string
 let graph = ref Label.M.empty
 let function_table = Hashtbl.create 16
 
-let generate i =
+let add_to_cfg i =
   let l = Label.fresh() in
   graph := Label.M.add l i !graph;
   l
 
-(* RTL translation for if-else branches *)
-let rec rtl_if expr if_stmt else_stmt locals dest_lb dest_reg exit_lb =
+let rec rtl_if e if_stmt else_stmt ctx ld rd l_exit =
   let test_reg = Register.fresh() in
-  let if_lb   = rtl_stmt if_stmt   locals dest_lb dest_reg exit_lb in
-  let else_lb = rtl_stmt else_stmt locals dest_lb dest_reg exit_lb in
-  let test_lb = generate (Emubranch (Ops.Mjnz, test_reg, if_lb, else_lb)) in
-  rtl_expr expr locals test_lb test_reg
+  let if_lb   = rtl_stmt if_stmt   ctx ld rd l_exit in
+  let else_lb = rtl_stmt else_stmt ctx ld rd l_exit in
+  let test_lb = add_to_cfg (Emubranch (Ops.Mjnz, test_reg, if_lb, else_lb)) in
+  rtl_expr e ctx test_lb test_reg
 
-
-(* TODO: for loops RTL translation *)
-and rtl_while expr stmt locals dest_lb dest_reg exit_lb =
+and rtl_for e stmt ctx ld rd l_exit = (* TODO *)
   let test_reg = Register.fresh() in
   let test_lb = Label.fresh() in
-  let eval_lb = rtl_expr expr locals test_lb test_reg in
-  let block_lb = rtl_stmt stmt locals eval_lb dest_reg exit_lb in
-  let test_instr = Emubranch (Ops.Mjnz, test_reg, block_lb, dest_lb) in
+  let eval_lb = rtl_expr e ctx test_lb test_reg in
+  let block_lb = rtl_stmt stmt ctx eval_lb rd l_exit in
+  let test_instr = Emubranch (Ops.Mjnz, test_reg, block_lb, ld) in
   graph := Label.M.add test_lb test_instr !graph;
   eval_lb
 
+and rtl_unop u e ctx ld rd =
+  match u with
+  | Uneg ->
+    let r_result = Register.fresh() in
+    let l_sub = add_to_cfg (Embinop (Ops.Msub, r_result, rd, ld)) in
+    let l_load_zero = add_to_cfg(Econst (Cint(0L), rd, l_sub)) in
+    rtl_expr e ctx l_load_zero r_result
+  | Unot ->
+    let r_result = add_to_cfg (Emunop ((Ops.Msetei 0L), rd, ld)) in
+    rtl_expr e ctx r_result rd
 
-(* RTL translation for unary operators *)
-and rtl_unop unop expr locals destl dest_register =
-  match unop with
-  | Ast.Uneg -> let expr_reg = Register.fresh() in (* dest = zero - dest *)
-    let sub_lb = generate (Embinop (Ops.Msub, expr_reg, dest_register, destl)) in (* zero = 0 *)
-    let loadZero_lb = generate(Econst (Cint(Int64.zero), dest_register, sub_lb)) in (* dest = compute(expr) *)
-    rtl_expr expr locals loadZero_lb expr_reg
-  | Ast.Unot ->
-    let not_lb = generate (Emunop ((Ops.Msetei Int64.zero), dest_register, destl)) in
-    rtl_expr expr locals not_lb dest_register
-
-(* RTL translation for binary operators *)
-and rtl_binop binop e1 e2 locals destl dest_register =
-  let translate_simple_binop binop = match binop with
-    | Ast.Badd -> Ops.Madd
-    | Ast.Bdiv -> Ops.Mdiv
-    | Ast.Bsub -> Ops.Msub
-    | Ast.Bmul -> Ops.Mmul
-    | Ast.Bge -> Ops.Msetge
-    | Ast.Bgt -> Ops.Msetg
-    | Ast.Ble -> Ops.Msetle
-    | Ast.Blt -> Ops.Msetl
-    | Ast.Beq -> Ops.Msete
-    | Ast.Bneq -> Ops.Msetne
-    | _ -> raise (Error ("(rtl) non-simple binop given to translate_simple_binop"))
+and rtl_binop b e1 e2 ctx ld rd =
+  let instr_translate = function
+    | Badd -> Ops.Madd
+    | Bsub -> Ops.Msub
+    | Bmul -> Ops.Mmul
+    | Bdiv -> Ops.Mdiv
+    | Bge -> Ops.Msetge
+    | Bgt -> Ops.Msetg
+    | Ble -> Ops.Msetle
+    | Blt -> Ops.Msetl
+    | Beq -> Ops.Msete
+    | Bneq -> Ops.Msetne
   in
-  match binop, e1, e2 with 
-  | Ast.Badd, Ast.TEcst(Cint i), _ -> 
-    let reg_e2 = Register.fresh() in
-    let addi = if binop == Ast.Badd then Ops.Maddi(i) else Ops.Maddi(Int64.neg i) in
-    let copy_lb = generate (Embinop (Ops.Mmov, reg_e2, dest_register, destl)) in
-    let next_instr = generate (Emunop (addi, reg_e2, copy_lb)) in
-    rtl_expr e2 locals next_instr reg_e2
-  | (Ast.Badd | Ast.Bsub), _, Ast.TEcst(Cint i) -> 
-    let reg_e1 = Register.fresh() in
-    let addi = if binop == Ast.Badd then Ops.Maddi(i) else Ops.Maddi(Int64.neg i) in
-    let copy_lb = generate (Embinop (Ops.Mmov, reg_e1, dest_register, destl)) in
-    let next_instr = generate (Emunop (addi, reg_e1, copy_lb)) in
-    rtl_expr e1 locals next_instr reg_e1
-  | _, _, _ -> 
-  
+  match b with
+  | Badd | Bdiv | Bmul | Bsub | Beq | Bneq | Bge | Bgt | Ble | Blt ->
+    let instr = instr_translate b in
+    let r_e1 = Register.fresh() in
+    let r_e2 = Register.fresh() in
+    let l_cpy_result = add_to_cfg (Embinop (Ops.Mmov, r_e1, rd, ld)) in
+    let l_do_op = add_to_cfg (Embinop (instr, r_e2, r_e1, l_cpy_result)) in
+    let l_e2 = rtl_expr e2 ctx l_do_op r_e2 in
+    rtl_expr e1 ctx l_e2 r_e1
+  | Band ->
+    let r_e1 = Register.fresh() in
+    let r_e2 = Register.fresh() in
+    let l_cpy_result = add_to_cfg (Embinop (Ops.Mmov, r_e2, rd, ld)) in
+    let l_test_e2 = add_to_cfg (Emunop (Ops.Msetnei (0L), r_e2, l_cpy_result)) in
+    let l_calc_e2 = rtl_expr e2 ctx l_test_e2 r_e2 in
+    let l_ret_false = add_to_cfg (Econst (Cint(0L), rd, ld)) in
+    let l_test_e1 = add_to_cfg (Emubranch (Ops.Mjnz, r_e1, l_calc_e2, l_ret_false)) in
+    let l_calc_e1 = rtl_expr e1 ctx l_test_e1 r_e1 in
+    l_calc_e1;
+  | Bor ->
+    let r_e1 = Register.fresh() in
+    let r_e2 = Register.fresh() in
+    let l_cpy_result = add_to_cfg (Embinop (Ops.Mmov, r_e2, rd, ld)) in
+    let l_test_e2 = add_to_cfg (Emunop (Ops.Msetnei (0L), r_e2, l_cpy_result)) in
+    let l_calc_e2 = rtl_expr e2 ctx l_test_e2 r_e2 in
+    let l_ret_false = add_to_cfg (Econst (Cint(1L), rd, ld)) in
+    let l_test_e1 = add_to_cfg (Emubranch (Ops.Mjz, r_e1, l_calc_e2, l_ret_false)) in
+    let l_calc_e1 = rtl_expr e1 ctx l_test_e1 r_e1 in
+    l_calc_e1;
 
-  match binop with
-  | (Ast.Badd| Ast.Bdiv | Ast.Bmul | Ast.Bsub)
-  | (Ast.Beq | Ast.Bneq | Ast.Bge | Ast.Bgt | Ast.Ble | Ast.Blt) ->
-    let conv_binop = translate_simple_binop binop in
-    let reg_e1 = Register.fresh() in
-    let reg_e2 = Register.fresh() in
-    let copy_lb = generate (Embinop (Ops.Mmov, reg_e1, dest_register, destl)) in
-    let next_instr = generate (Embinop (conv_binop, reg_e2, reg_e1, copy_lb)) in
-    let lb_e2 = rtl_expr e2 locals next_instr reg_e2 in
-    rtl_expr e1 locals lb_e2 reg_e1
-
-  | (Ast.Band) ->
-    let reg_e1 = Register.fresh() in
-    let reg_e2 = Register.fresh() in (* return e2 *)
-    let copy_e2_lb = generate (Embinop (Ops.Mmov, reg_e2, dest_register, destl)) in (* e2 = (e2 != 0) *)
-    let test_e2_lb = generate (Emunop (Ops.Msetnei (Int64.zero), reg_e2, copy_e2_lb)) in (* if e1 true, compute e2 *)
-    let calc_e2_lb = rtl_expr e2 locals test_e2_lb reg_e2 in (* if e1 false, return 0 *)
-    let retFalse_lb = generate (Econst (Cint(Int64.zero), dest_register, destl)) in (* test (e1!=0) and jump *)
-    let test_e1_lb = generate (Emubranch (Ops.Mjnz, reg_e1, calc_e2_lb, retFalse_lb)) in (* compute e1 *)
-    rtl_expr e1 locals test_e1_lb reg_e1
-
-  | (Ast.Bor) ->
-    let reg_e1 = Register.fresh() in
-    let reg_e2 = Register.fresh() in (* return e2 *)
-    let copy_e2_lb = generate (Embinop (Ops.Mmov, reg_e2, dest_register, destl)) in (* e2 = (e2 != 0) *)
-    let test_e2_lb = generate (Emunop (Ops.Msetnei (Int64.zero), reg_e2, copy_e2_lb)) in (* if e1 false, compute e2 *)
-    let calc_e2_lb = rtl_expr e2 locals test_e2_lb reg_e2 in (* if e1 true, return 1 *)
-    let retFalse_lb = generate (Econst (Cint(Int64.one), dest_register, destl)) in (* test (e1 == 0) and jump *)
-    let test_e1_lb = generate (Emubranch (Ops.Mjz, reg_e1, calc_e2_lb, retFalse_lb)) in (* compute e1 *)
-    rtl_expr e1 locals test_e1_lb reg_e1
-
-
-and rtl_funcall fun_ident expr_arglist locals destl dest_register = 
-  (* Compute and store each argument into the appropriate register *)
-  let rec create_reglist n = 
-    if n==0 then []
-    else Register.fresh() :: create_reglist (n-1)
+and rtl_call fn params ctx ld rd = 
+  let rec gen_registers n = 
+    if n == 0 then []
+    else Register.fresh() :: gen_registers (n - 1)
   in
-  let rec parse_formals expr_list formal_reglist finalDest_lb = match expr_list, formal_reglist with
-    | expr::expRemain, form::formRemain -> 
-      let next_lb = parse_formals expRemain formRemain finalDest_lb in
-      rtl_expr expr locals next_lb form
-    | [],[] -> finalDest_lb
-    | _,_ -> raise (Error "(rtl) bad arity in function call")
+  let rec rtl_params params regs_args ld = match params, regs_args with
+    | e::etail, f::ftail -> 
+      rtl_expr e ctx (rtl_params etail ftail ld) f
+    | [],[] -> ld
+    | _, _ -> raise (Error "(rtl) bad arity in function call")
   in
-  let get_fun_infos fun_ident = match fun_ident with
-    | "print" -> ("print", 1) (* TODO: implement *)
-    | "len" -> ("len", 1) (* TODO: implement // generate (Econst ((Int64.of_int structure.Ttree.str_totalSize), dest_register, destl)) *)
-    | name when Hashtbl.mem function_table name -> 
-      let fun_descr = Hashtbl.find function_table name in
-      (name, List.length fun_descr.fun_formals)
-    | _ -> raise (Error ("(rtl) undefined function " ^ fun_ident))
-  in
-  let (f_name, f_argLength) = get_fun_infos fun_ident in
-  let arg_reglist = create_reglist f_argLength in
-  let fun_lb = generate (Ecall (dest_register, fun_ident, arg_reglist, destl)) in
-  let start_lb = parse_formals expr_arglist arg_reglist fun_lb in
-  start_lb
+  let regs_args = gen_registers (List.length params) in
+  let l_call = add_to_cfg (Ecall (rd, fn, regs_args, ld)) in
+  let l_start = rtl_params params regs_args l_call in
+  l_start
 
-
-(* RTL translation of a generic expression *)
-and rtl_expr expr locals destl dest_register =
-  match expr with
-  | TEcst i -> generate (Econst (i, dest_register, destl))
-  | TEvar v ->
-    let var_reg = Hashtbl.find locals v.v_name in
-    generate (Embinop (Ops.Mmov, var_reg, dest_register, destl))
-  | TEbinop (binop, e1, e2) ->  rtl_binop binop e1 e2 locals destl dest_register
-  | TEunop (unop, expr) ->  rtl_unop unop expr locals destl dest_register
-  | TEcall (fn, expr_list) -> rtl_funcall fn.fn_name expr_list locals destl dest_register
+and rtl_expr e ctx ld rd =
+  match e with
+  | TEcst i -> add_to_cfg (Econst (i, rd, ld))
+  | TEvar v -> add_to_cfg (Embinop (Ops.Mmov, (Hashtbl.find ctx v.v_name), rd, ld))
+  | TEbinop (binop, e1, e2) -> rtl_binop binop e1 e2 ctx ld rd
+  | TEunop (unop, expr) -> rtl_unop unop expr ctx ld rd
+  | TEcall (fn, expr_list) -> rtl_call fn.fn_name expr_list ctx ld rd
   | TElist expr_list -> raise (Error "(rtl) not implemented")
   | TErange e -> raise (Error "(rtl) not implemented")
-  | TEget (e1, e2) -> raise (Error "(rtl) not implemented") (* like access_field *)
-  (* | Ast.TEaccess_field (structExpr, field) -> 
-    let offset = field.Ttree.field_pos in
-    let calc_reg = Register.fresh() in
-    let access_lb = generate (Eload (calc_reg, 8*offset, dest_register, destl)) in
-    let calc_lb = rtl_expr structExpr locals access_lb calc_reg in
-    calc_lb *)
+  | TEget (e1, TEvar(e2)) -> (* TODO: debug, I don't understand most of this *)
+    let ofs = e2.Ast.v_ofs in
+    let r_e2 = Register.fresh() in
+    let l_addr = add_to_cfg (Eload (r_e2, 8 * ofs, rd, ld)) in
+    rtl_expr e1 ctx l_addr r_e2;
+  | TEget (e1, e2) -> raise (Error "(rtl) 'get' not implemented")
 
-
-(* stmt translation *)
-and rtl_stmt stmt locals dest_lb return_reg exit_lb =
+and rtl_stmt stmt ctx ld r_ret l_exit =
   match stmt with
-  (* decided to explicitly force a move *)
-  (* | Ast.TSreturn expr -> rtl_expr expr locals exit_lb return_reg *)
-  | Ast.TSreturn expr -> 
+  | TSreturn expr -> 
     let result_reg = Register.fresh() in
-    let ret_lb = generate (Embinop (Ops.Mmov, result_reg, return_reg, exit_lb)) in
-    rtl_expr expr locals ret_lb result_reg
-  (* TODO: (???) | Ast.TSexpr expr -> let result_reg = Register.fresh() in rtl_expr expr locals dest_lb result_reg *)
-  | Ast.TSif (expr, if_stmt, else_stmt) -> rtl_if expr if_stmt else_stmt locals dest_lb return_reg exit_lb
-  | Ast.TSblock block ->  rtl_block block locals dest_lb return_reg exit_lb
-  | Ast.TSfor (v, expr, stmt) -> raise (Error "(rtl) not implemented")
-    (* like rtl_while expr stmt locals dest_lb return_reg exit_lb *)
-  | Ast.TSset (e1, e2, e3) -> raise (Error "(rtl) not implemented")
-   (* | Ast.TEassign_field (structExpr, field, assignExpr) ->
+    let ret_lb = add_to_cfg (Embinop (Ops.Mmov, result_reg, r_ret, l_exit)) in
+    rtl_expr expr ctx ret_lb result_reg
+  | TSif (expr, if_stmt, else_stmt) -> rtl_if expr if_stmt else_stmt ctx ld r_ret l_exit
+  | TSblock block ->  rtl_block block ctx ld r_ret l_exit
+  | TSfor (v, expr, stmt) -> raise (Error "(rtl) not implemented")
+    (* like rtl_while expr stmt ctx dest_lb return_reg exit_lb *)
+  | TSset (e1, e2, e3) -> raise (Error "(rtl) not implemented")
+   (* | TEassign_field (structExpr, field, assignExpr) ->
     let offset = field.Ttree.field_pos in
     let struct_reg = Register.fresh() in
     let assign_reg = Register.fresh() in
     (* copy assigned value as return value *)
-    let return_lb = generate (Embinop (Ops.Mmov, assign_reg, dest_register, destl)) in
+    let return_lb = generate (Embinop (Ops.Mmov, assign_reg, rd, ld)) in
     (* assign value to field  - offset is (index of field) * (size of a field = 8 bytes) *)
     let access_lb = generate (Estore (assign_reg, struct_reg, 8*offset, return_lb)) in
     (* compute struct pointer *)
-    let calcStruct_lb = rtl_expr structExpr locals access_lb struct_reg in
+    let calcStruct_lb = rtl_expr structExpr ctx access_lb struct_reg in
     (* compute assigned expression *)
-    let calcAssign_lb = rtl_expr assignExpr locals calcStruct_lb assign_reg in
+    let calcAssign_lb = rtl_expr assignExpr ctx calcStruct_lb assign_reg in
     calcAssign_lb *)
-  | Ast.TSeval e -> raise (Error "(rtl) not implemented")
-  | Ast.TSprint e -> raise (Error "(rtl) print not implemented")
-  | Ast.TSassign (v, e) -> raise (Error "(rtl) not implemented")
-  (* 
-  | Ast.TEassign_local (var_ident, myexpr) -> 
-    begin try
-        let var_reg = Hashtbl.find locals var_ident in
-        let calc_reg = Register.fresh() in
-        let sideAssign_lb = generate (Embinop (Ops.Mmov, calc_reg, dest_register, destl)) in
-        let assign_lb = generate (Embinop (Ops.Mmov, calc_reg, var_reg, sideAssign_lb)) in
-        rtl_expr myexpr locals assign_lb calc_reg
-      with 
-      |Not_found -> raise (Error ("Variable not found " ^ var_ident))
-    end *)
+  | TSeval e -> let result_reg = Register.fresh() in rtl_expr e ctx ld result_reg
+  | TSprint e -> raise (Error "(rtl) print not implemented")
+  | TSassign (v, e) ->
+    let var_reg =
+      if Hashtbl.mem ctx v.v_name then
+        Hashtbl.find ctx v.v_name
+      else 
+        let new_reg = Register.fresh() in
+        Hashtbl.add ctx v.v_name new_reg;
+        new_reg
+      in
+    let calc_reg = Register.fresh() in
+    let assign_lb = add_to_cfg (Embinop (Ops.Mmov, calc_reg, var_reg, ld)) in
+    rtl_expr e ctx assign_lb calc_reg;
 
 
-(* Statement list translation *)
-and rtl_stmt_list stmtlist locals destl (result:Register.t) exit_lb =
+and rtl_stmt_list stmtlist ctx ld (result : Register.t) l_exit =
   match stmtlist with
-  | stmt::[] -> let stmtlabel = rtl_stmt stmt locals destl result exit_lb in stmtlabel
-  | stmt::remain -> let stmtlabel = rtl_stmt stmt locals destl result exit_lb in rtl_stmt_list remain locals stmtlabel result exit_lb
+  | stmt::[] -> let stmtlabel = rtl_stmt stmt ctx ld result l_exit in stmtlabel
+  | stmt::remain -> let stmtlabel = rtl_stmt stmt ctx ld result l_exit in rtl_stmt_list remain ctx stmtlabel result l_exit
   | [] -> raise (Error "(rtl) empty body")
 
-(* TODO: Block translation *)
-and rtl_block stmtlist locals dest_lb (result:Register.t) exit_lb =
-  let reversed_stmtlist = List.rev stmtlist in
-  let body_lb = rtl_stmt_list reversed_stmtlist locals dest_lb result exit_lb in
-  body_lb
+and rtl_block block ctx d (result : Register.t) l_exit =
+  let rev_block = List.rev block in
+  let l_block = rtl_stmt_list rev_block ctx d result l_exit in
+  l_block
 
-(* TODO: Function translation *)
-let rtl_fun ((fn, stmt):Ast.tdef) =
-  let extract_values table =
-    Hashtbl.fold (fun key value val_list -> val_list@[value]) table []
+let rtl_def ((fn, stmt) : Ast.tdef) =
+  let extract_args table = Hashtbl.fold (fun key value val_list -> val_list@[value]) table [] in
+  let r_arg ctx v = 
+    let r = Register.fresh() in
+    Hashtbl.add ctx v.Ast.v_name r;
+    r
   in
-  let add_formal locals v = 
-    let reg = Register.fresh() in
-    Hashtbl.add locals v.Ast.v_name reg;
-    reg
-  in
-  let exit = Label.fresh() in
-  let result = Register.fresh() in
-  let locals = Hashtbl.create 16 in
-  let formals_reg = List.map (add_formal locals) fn.Ast.fn_params in
+  let l_exit = Label.fresh() in
+  let r_result = Register.fresh() in
+  let ctx = Hashtbl.create 16 in
+  let regs_args = List.map (r_arg ctx) fn.Ast.fn_params in
+  
   (* create partial entry to allow recursive calls *)
-  let partial_fun_descr = 
-    {fun_name = fn.Ast.fn_name;
-     fun_formals = formals_reg;
-     fun_result = result;
-     fun_locals = Register.set_of_list ([]);
+  let partial_fun = 
+    {fun_name = fn.fn_name;
+     fun_formals = regs_args;
+     fun_result = r_result;
+     fun_ctx = Register.set_of_list ([]);
      fun_entry = Label.fresh();
-     fun_exit = exit;
+     fun_exit = l_exit;
      fun_body = !graph ;} in
-  Hashtbl.add function_table partial_fun_descr.fun_name partial_fun_descr;
+  Hashtbl.add function_table fn.fn_name partial_fun;
 
   (* translate body *)
-  let entry = rtl_stmt stmt locals exit result exit in
+  let entry = rtl_stmt stmt ctx l_exit r_result l_exit in
 
   (* final entry *)
   let fun_descr = 
     {fun_name = fn.fn_name;
-     fun_formals = formals_reg;
-     fun_result = result;
-     fun_locals = Register.set_of_list (extract_values locals);
+     fun_formals = regs_args;
+     fun_result = r_result;
+     fun_ctx = Register.set_of_list (extract_args ctx);
      fun_entry = entry;
-     fun_exit = exit;
+     fun_exit = l_exit;
      fun_body = !graph ;}
   in 
-  Hashtbl.replace function_table fun_descr.fun_name fun_descr;
+  Hashtbl.replace function_table fn.fn_name fun_descr;
   fun_descr
 
-let rec rtl_funlist def_list = 
-  List.map (rtl_fun) def_list
-
-let file (p : Ast.tfile) : rtlfile =
-  {funs = rtl_funlist p}
+let file (p : tfile) : rtlfile =
+  {funs = List.map (rtl_def) p}

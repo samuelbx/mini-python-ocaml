@@ -141,7 +141,7 @@ let rec string_of_stmt = function
   | TSblock stmts -> "{" ^ String.concat "\n" (List.map string_of_stmt stmts) ^ "}"
   | TSfor (var, e, body) ->
       "for " ^ var.v_name ^ " in " ^ string_of_expr e ^ ":\n" ^ string_of_stmt body
-  | TSeval e -> string_of_expr e
+  | TSeval e -> "eval " ^ string_of_expr e
   | TSset (e1, e2, e3) -> string_of_expr e1 ^ "[" ^ string_of_expr e2 ^ "] = " ^ string_of_expr e3
 
 let rec string_of_tdef (fn, body) =
