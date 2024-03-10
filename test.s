@@ -1,5 +1,4 @@
 	.text
-	.globl	main
 main:
 	pushq %rbp
 	movq %rsp, %rbp
@@ -16,7 +15,6 @@ main:
 	movl $0, %eax
 	popq %rbp
 	ret
-	.globl	f
 f:
 	pushq %rbp
 	movq %rsp, %rbp

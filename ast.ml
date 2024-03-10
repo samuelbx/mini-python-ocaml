@@ -92,7 +92,7 @@ and tfile = tdef list
   (** the block of global statements is now a `main` function *)
 
 
-(* Temporary !! *)
+(* (temporary) Debug files *)
 let rec string_of_constant = function
   | Cnone -> "None"
   | Cbool b -> string_of_bool b

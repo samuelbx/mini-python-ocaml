@@ -3,6 +3,11 @@ open Format
 open X86_64
 open Ast
 
+(* temp *)
+open Ops
+open Rtltree
+open Rtl
+
 let debug = ref false
 
 (* Register all constants in .data section *)
@@ -115,7 +120,7 @@ let rec gen_stmt ctable = function
 let gen_def ctable (tdef : Ast.tdef) =
   let (fn, stmts) = tdef in
   let retrieved_args = retrieve_function_args 0 fn.fn_params in
-  globl fn.fn_name ++ label fn.fn_name 
+  label fn.fn_name 
   ++ (pushq (reg rbp))
   ++ (movq (reg rsp) (reg rbp))
   ++ retrieved_args
