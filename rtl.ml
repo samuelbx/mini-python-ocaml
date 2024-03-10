@@ -139,17 +139,12 @@ and rtl_funcall fun_ident expr_arglist locals destl dest_register =
 
 
 (* RTL translation of a generic expression *)
-and rtl_expr expr locals destl dest_register= match expr with
+and rtl_expr expr locals destl dest_register =
+  match expr with
   | TEcst i -> generate (Econst (i, dest_register, destl))
-  (* TODO: HANDLE OTHER CONSTANT TYPES *)
-  | TEvar v -> raise (Error "(rtl) not implemented")
-  (* | Ast.TEvar var_ident ->
-    begin try
-        let var_reg = Hashtbl.find locals var_ident in
-        generate (Embinop (Ops.Mmov, var_reg, dest_register, destl))
-      with 
-      | Not_found -> raise (Error ("Variable not found " ^ var_ident))
-    end *)
+  | TEvar v ->
+    let var_reg = Hashtbl.find locals v.v_name in
+    generate (Embinop (Ops.Mmov, var_reg, dest_register, destl))
   | TEbinop (binop, e1, e2) ->  rtl_binop binop e1 e2 locals destl dest_register
   | TEunop (unop, expr) ->  rtl_unop unop expr locals destl dest_register
   | TEcall (fn, expr_list) -> rtl_funcall fn.fn_name expr_list locals destl dest_register
@@ -193,7 +188,7 @@ and rtl_stmt stmt locals dest_lb return_reg exit_lb =
     let calcAssign_lb = rtl_expr assignExpr locals calcStruct_lb assign_reg in
     calcAssign_lb *)
   | Ast.TSeval e -> raise (Error "(rtl) not implemented")
-  | Ast.TSprint e -> raise (Error "(rtl) not implemented")
+  | Ast.TSprint e -> raise (Error "(rtl) print not implemented")
   | Ast.TSassign (v, e) -> raise (Error "(rtl) not implemented")
   (* 
   | Ast.TEassign_local (var_ident, myexpr) -> 

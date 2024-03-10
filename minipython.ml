@@ -49,6 +49,8 @@ let () =
     if debug then
       print_endline str;
     if !type_only then exit 0;
+    let rtl = Rtl.file f in
+    Rtltree.print_rtlfile std_formatter rtl;
     let code = Compile.file ~debug f in
     let c = open_out (Filename.chop_suffix file ".py" ^ ".s") in
     let fmt = formatter_of_out_channel c in
