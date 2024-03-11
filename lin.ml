@@ -1,7 +1,5 @@
-(** Final Linearisation step *)
 
 open X86_64
-(* open Register *)
 open Ops
 open Format
 exception Error of string
@@ -61,7 +59,6 @@ let operandb = function
   | Ltltree.Reg (r) -> reg (registerb r)
   | Ltltree.Spilled (i) -> ind ~ofs:i X86_64.rbp
 
-
 let treat_unop unop op l= 
   match unop with 
   | Maddi (i64) ->  if Int64.to_int i64 == 1 
@@ -96,7 +93,6 @@ let convert_binop_1 = function
 | Msetge -> setge
 | _ -> raise (Error "convert binop 1 pas content")
 
-
 let treat_binop binop op1 op2 l =
   match binop with  
   | Mmov 
@@ -118,7 +114,6 @@ let bin_jmp_match = function
   | Mjl -> jl
   | Mjle -> jle
 
-
 let bin_opposite_jmp_match = function
   | Mjl -> jle
   | Mjle -> jl 
@@ -126,14 +121,12 @@ let bin_opposite_jmp_match = function
 let un_opposite_jmp_match = function
   | Mjz -> jnz
   | Mjnz -> jz
-  (** inf or eq to const *)
   | Mjlei (i64) -> jg
   | Mjgi  (i64) -> jle 
 
 let un_jmp_match = function
   | Mjz -> jz
   | Mjnz -> jnz
-  (** inf or eq to const *)
   | Mjlei (i64) -> jle
   | Mjgi  (i64) -> jg 
 
@@ -141,13 +134,11 @@ let rec treat_mubranch mubranch (op : Ltltree.operand) (lb1 : Label.t) (lb2 : La
   (match mubranch with 
   | Mjz 
   | Mjnz -> emit l (testq (operandq op) (operandq op))
-  (** inf or eq to const *)
   | Mjlei (i64) 
   | Mjgi  (i64) -> emit l (cmpq (imm64 i64) (operandq op)));
   
   if not (Hashtbl.mem visited lb2) then begin
     need_label lb1;
-
     emit_wl ((un_jmp_match mubranch) (lb1 :> string));
     lin g lb2;
     lin g lb1
@@ -165,10 +156,6 @@ let rec treat_mubranch mubranch (op : Ltltree.operand) (lb1 : Label.t) (lb2 : La
       emit_wl (jmp (lb2 :> string))
     end
   end
-
-
-
-
 
 and treat_mbbranch mbbranch (op1 : Ltltree.operand) (op2 : Ltltree.operand) (lb1 : Label.t)  (lb2 : Label.t) g l = 
   emit l (cmpq (operandq op1) (operandq op2));
