@@ -14,6 +14,7 @@ type rtlinstr =
   | Emubranch of mubranch * register * label * label
   | Embbranch of mbbranch * register * register * label * label
   | Ecall of register * string * register list * label
+  | Egoto of label
 
 type cfg = rtlinstr Label.map
 

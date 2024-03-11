@@ -55,6 +55,7 @@ let ertl_instr = function
   | Rtltree.Emubranch (m, r, l1, l2) -> Emubranch (m, r, l1, l2)
   | Rtltree.Embbranch (m, r1, r2, l1, l2) -> Embbranch (m, r1, r2, l1, l2)
   | Rtltree.Ecall (r, s, rlist, l) -> treat_ecall r s rlist l
+  | Rtltree.Egoto (l) -> Egoto (l)
 
 let treat_instr_label l i =
   let i = ertl_instr i in

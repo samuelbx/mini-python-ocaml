@@ -140,7 +140,10 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
   | TSeval e ->
       let result_reg = Register.fresh () in
       rtl_expr e ctx ld result_reg
-  | TSprint e -> raise (Error "(rtl) print not implemented")
+  | TSprint expr ->
+      let r_expr = Register.fresh () in
+      let l_call = add_to_cfg (Ecall (r_ret, "__print__", [r_expr], ld)) in
+      rtl_expr expr ctx ld r_expr; 
   | TSassign (v, e) ->
       let var_reg =
         if Hashtbl.mem ctx v.v_name then Hashtbl.find ctx v.v_name
@@ -161,7 +164,7 @@ and rtl_stmt_list stmtlist ctx ld (result : Register.t) l_exit =
   | stmt :: remain ->
       let stmtlabel = rtl_stmt stmt ctx ld result l_exit in
       rtl_stmt_list remain ctx stmtlabel result l_exit
-  | [] -> raise (Error "(rtl) empty body")
+  | [] -> add_to_cfg (Egoto (ld))
 
 and rtl_block block ctx d (result : Register.t) l_exit =
   let rev_block = List.rev block in
