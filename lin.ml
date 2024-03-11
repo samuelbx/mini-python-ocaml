@@ -2,7 +2,11 @@
 open X86_64
 open Ops
 open Format
+open Ltltree
 exception Error of string
+
+
+let data_strings = Hashtbl.create 17
 
 let visited = Hashtbl.create 17
 type instr = Code of X86_64.text | Label of Label.t
@@ -190,10 +194,23 @@ and lin g l =
     emit_wl (jmp (l :> string))
   end
 
+and load_string g l str op lb =
+  let str_lbl =
+    if not (Hashtbl.mem data_strings str) then
+      let new_lbl = Datalabel.fresh () in
+      Hashtbl.add data_strings str new_lbl;
+      new_lbl
+    else
+      Hashtbl.find data_strings str
+    in
+  emit l (movq (reg ("$" ^ str_lbl)) (operandq op)); lin g lb
+
 and instru g l = function
-  | Ltltree.Econst (n, op, lb) ->
+  | Ltltree.Econst (Cint n, op, lb) ->
       emit l (movq (imm64 n) (operandq op)); lin g lb
-  | Ltltree.Egoto (lb) -> emit_only_l l ;lin g lb
+  | Ltltree.Econst (Cstring s, op, lb) ->
+      load_string g l s op lb;
+  | Ltltree.Egoto (lb) -> emit_only_l l; lin g lb
   | Ltltree.Eload (op1 ,n , op2, lb) -> 
       emit l (movq (X86_64.ind ~ofs:n (registerq op1)) (reg (registerq op2))); lin g lb
   | Ltltree.Estore (op1, op2, n, lb) ->
@@ -204,7 +221,7 @@ and instru g l = function
   | Ltltree.Epush (op, lb) -> emit l (pushq (operandq(op))); lin g lb
   | Ltltree.Epop (op, lb) -> emit l (popq (registerq(op))); lin g lb
   | Ltltree.Emubranch (mubranch, op, lb1, lb2) -> treat_mubranch mubranch op lb1 lb2 g l 
-  | Ltltree.Ecall (ident , lb) -> emit l (call ident); lin g lb (* TODO: implement printf *)
+  | Ltltree.Ecall (ident , lb) -> emit l (call ident); lin g lb (* TODO: implement printf, zero %eax *)
   | Ltltree.Embbranch (mbbranch, op1, op2, lb1, lb2) -> treat_mbbranch mbbranch op1 op2 lb1 lb2 g l 
 
 let rec linearize = function
@@ -219,4 +236,11 @@ let file p =
     | Label (lb) -> let (str_lb : string) = (lb :> string) in if Hashtbl.mem labels lb then (++) (label str_lb) asm1 else asm1
   in
   let text1 = List.fold_left filter_instr nop !code in
-  {text = (++) (globl "main") text1; data = nop}
+  let fold_hashtbl = fun h -> Hashtbl.fold (fun k v acc -> (v, k) :: acc) h [] in
+  let data_pairs = fold_hashtbl data_strings in
+  let rec generate_data_section = function
+    | [] -> nop
+    | (v, k) :: rest -> (label v ++ string k) ++ (generate_data_section rest)
+  in
+
+  {text = (++) (globl "main") text1; data = (generate_data_section data_pairs)}

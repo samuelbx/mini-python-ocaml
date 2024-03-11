@@ -24,7 +24,7 @@ type instr =
   | Egoto of label
   | Ereturn
   (** same as ERTL, but with operand instead of register *)
-  | Econst of int64 * operand * label
+  | Econst of Ast.constant * operand * label
   | Emunop of munop * operand * label
   | Embinop of mbinop * operand * operand * label
   | Emubranch of mubranch * operand * label * label
@@ -61,8 +61,10 @@ let operand fmt = function
   | Spilled n -> fprintf fmt "%d(%%rbp)" n
 
 let print_instr fmt = function
-  | Econst (n, r, l) ->
+  | Econst (Cint n, r, l) ->
       fprintf fmt "mov $%Ld %a;  goto %a" n operand r Label.print l
+  | Econst (Cstring s, r, l) ->
+      fprintf fmt "mov some_string %a;  goto %a" operand r Label.print l
   | Eload (r1, n, r2, l) ->
       fprintf fmt "mov %d(%a) %a;  goto %a"
         n Register.print r1 Register.print r2 Label.print l

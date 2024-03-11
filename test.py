@@ -1,3 +1,2 @@
-x = 1
-if x == 0:
-  x = 99
+print(0)
+print("Hello World!")

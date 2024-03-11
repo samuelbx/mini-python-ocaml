@@ -162,7 +162,7 @@ let ltl_i_store colors src_preg dest_preg destOffset lb =
 *)
 let ltl_instr colors spilledNumber myinstr =
   match myinstr with
-  | Ertltree.Econst (Cint n, reg, lb) -> Econst (n, lookup colors reg, lb)
+  | Ertltree.Econst (n, reg, lb) -> Econst (n, lookup colors reg, lb)
   | Ertltree.Ereturn -> Ereturn
   | Ertltree.Egoto lb -> Egoto lb
   | Ertltree.Ecall (ident, nReg, lb) -> Ecall (ident, lb)
