@@ -1,18 +1,10 @@
 	.text
+	.globl	main
 __main__:
 	pushq %rbp
 	movq %rsp, %rbp
-	call f
-	movl $0, %eax
-	popq %rbp
-	ret
-f:
-	pushq %rbp
-	movq %rsp, %rbp
-	ret
-	movl $0, %eax
+	movq $0, %r10
+	movq %rbp, %rsp
 	popq %rbp
 	ret
 	.data
-.LC0:
-	.string "%d"

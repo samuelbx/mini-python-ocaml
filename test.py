@@ -1,4 +1,1 @@
-def f():
-  return 0
-
-f()
+x = 0
