@@ -93,7 +93,7 @@ and rtl_call fn params ctx ld rd =
     | _, _ -> raise (Error "(rtl) bad arity in function call")
   in
   let regs_args = gen_registers (List.length params) in
-  let l_call = add_to_cfg (Ecall (rd, fn, regs_args, ld)) in
+  let l_call = add_to_cfg (Ecall (rd, fn.fn_name, regs_args, ld)) in
   let l_start = rtl_params params regs_args l_call in
   l_start
 
@@ -103,7 +103,7 @@ and rtl_expr e ctx ld rd =
   | TEvar v -> add_to_cfg (Embinop (Ops.Mmov, (Hashtbl.find ctx v.v_name), rd, ld))
   | TEbinop (binop, e1, e2) -> rtl_binop binop e1 e2 ctx ld rd
   | TEunop (unop, expr) -> rtl_unop unop expr ctx ld rd
-  | TEcall (fn, expr_list) -> rtl_call fn.fn_name expr_list ctx ld rd
+  | TEcall (fn, expr_list) -> rtl_call fn expr_list ctx ld rd
   | TElist expr_list -> raise (Error "(rtl) not implemented")
   | TErange e -> raise (Error "(rtl) not implemented")
   | TEget (e1, TEvar(e2)) -> (* TODO: debug, I don't understand most of this *)
@@ -204,4 +204,5 @@ let rtl_def ((fn, stmt) : Ast.tdef) =
   fun_descr
 
 let file (p : tfile) : rtlfile =
+  (* TODO: handle global / local context *)
   {funs = List.map (rtl_def) p}

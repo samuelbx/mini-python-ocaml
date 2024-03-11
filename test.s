@@ -1,14 +1,14 @@
 	.text
-main:
+__main__:
 	pushq %rbp
 	movq %rsp, %rbp
+	call f
 	movl $0, %eax
 	popq %rbp
 	ret
 f:
 	pushq %rbp
 	movq %rsp, %rbp
-	movl %edi, -4(%rbp)
 	ret
 	movl $0, %eax
 	popq %rbp
