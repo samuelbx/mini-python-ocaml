@@ -16,7 +16,6 @@ type operand =
   | Reg of Register.t
   | Spilled of int
 
-(** Les différentes instructions LTL *)
 type instr =
   (** same as ERTL *)
   | Eload of register * int * register * label

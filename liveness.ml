@@ -14,13 +14,10 @@ let create_live_info mylabel myinstr =
       instr = myinstr;
       succ = successeurs;
       pred = Label.S.empty;
-      (* Will be updated iterativly by update_pred *)
       defs = Register.set_of_list defs;
       uses = Register.set_of_list uses;
       ins = Register.S.empty;
-      (* Will be updated by the Kildall algorithm *)
       outs = Register.S.empty;
-      (* Will be updated by the Kildall algorithm *)
     }
   in
   Hashtbl.add livenessHashtbl mylabel my_live_info
@@ -61,17 +58,13 @@ let kildall () =
     let old_ins = my_live_info.ins in
     compute_outs my_live_info;
     compute_ins my_live_info;
-    (* Maybe put my_live_info back into the hashtable i dont know... *)
     if not (Register.S.equal old_ins my_live_info.ins) then
       remaining_labels.set <- Label.S.union my_live_info.pred remaining_labels.set
   done
 
-(* Fills a map from a hashtbl to get a good return type *)
 let fill_the_map label my_live_info = live_info_map := Label.M.add label my_live_info !live_info_map
 
-(* Main function that fills the hashtbl and performs the kildall algorithm *)
 let liveness instrMap =
-  (* Hashtbl.clear livenessHashtbl; *)
   Label.M.iter create_live_info instrMap;
   Hashtbl.iter update_pred livenessHashtbl;
   kildall ();
