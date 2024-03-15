@@ -141,9 +141,10 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
       let result_reg = Register.fresh () in
       rtl_expr e ctx ld result_reg
   | TSprint (TEcst (Cint i) as expr) ->
+      let r_ret_printf = Register.fresh() in
       let r_expr = Register.fresh () in
       let r_fmt = Register.fresh () in
-      let l_call = add_to_cfg (Ecall (r_ret, "printf", [r_fmt] @ [r_expr], ld)) in
+      let l_call = add_to_cfg (Ecall (r_ret_printf, "printf", [r_fmt] @ [r_expr], ld)) in
       let str_fmt =  TEcst (Cstring "%d\n") in
       let l_fmt = rtl_expr str_fmt ctx l_call r_fmt in
       rtl_expr expr ctx l_fmt r_expr;

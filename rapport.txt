@@ -13,6 +13,8 @@
 
 3. RTL [rtl.ml]
 
+TODO: décrire la memory structure choisie
+
 Pour la suite :
 
 Faute de temps (nous sommes des élèves du PA MAP avec beaucoup d'autres partiels à préparer),
