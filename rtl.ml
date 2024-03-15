@@ -144,13 +144,16 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
       let r_expr = Register.fresh () in
       let r_fmt = Register.fresh () in
       let l_call = add_to_cfg (Ecall (r_ret, "printf", [r_fmt] @ [r_expr], ld)) in
-      let str_fmt =  TEcst (Cstring "%d") in
+      let str_fmt =  TEcst (Cstring "%d\n") in
       let l_fmt = rtl_expr str_fmt ctx l_call r_fmt in
       rtl_expr expr ctx l_fmt r_expr;
   | TSprint expr ->
       let r_expr = Register.fresh () in
-      let l_call = add_to_cfg (Ecall (r_ret, "printf", [r_expr], ld)) in
-      rtl_expr expr ctx l_call r_expr; 
+      let r_antislashn = Register.fresh () in
+      let l_call_newline = add_to_cfg (Ecall (r_ret, "printf", [r_antislashn], ld)) in
+      let l_call = add_to_cfg (Ecall (r_ret, "printf", [r_expr], l_call_newline)) in
+      let l_load_newline = rtl_expr (TEcst(Cstring("\n"))) ctx l_call r_antislashn in
+      rtl_expr expr ctx l_load_newline r_expr; 
   | TSassign (v, e) ->
       let var_reg =
         if Hashtbl.mem ctx v.v_name then Hashtbl.find ctx v.v_name
