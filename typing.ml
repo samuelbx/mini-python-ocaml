@@ -128,7 +128,7 @@ let type_def global def =
     | Some dup -> error ~loc:dup.loc "(typing) duplicate argument '%s' in function definition" dup.id
     | None ->
         let tparams = List.map (fun param -> { v_name = param.id; v_ofs = 0 }) params in
-        let fn = { fn_name = name.id; fn_params = tparams } in
+        let fn = { fn_name = "def_" ^ name.id; fn_params = tparams } in
         Hashtbl.add function_table name.id fn;
         (fn, type_stmt local stmt)
 
