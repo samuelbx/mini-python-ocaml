@@ -1,2 +1,4 @@
-print(0)
-print("Hello World!")
+def f(x):
+  print("ok")
+
+f(1)
