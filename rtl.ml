@@ -103,7 +103,21 @@ and rtl_expr e ctx ld rd =
   | TEbinop (binop, e1, e2) -> rtl_binop binop e1 e2 ctx ld rd
   | TEunop (unop, expr) -> rtl_unop unop expr ctx ld rd
   | TEcall (fn, expr_list) -> rtl_call fn expr_list ctx ld rd
-  | TElist expr_list -> raise (Error "(rtl) not implemented")
+  | TElist expr_list ->
+      let rec set_list i = function
+        | [] -> ld
+        | expr :: tail ->
+            let value_reg = Register.fresh () in
+            let alloc_lb = add_to_cfg (Estore (value_reg, rd ,i*8, set_list (i+1) tail)) in
+            let value_lb = rtl_expr expr ctx alloc_lb value_reg in
+            value_lb
+      in
+        let len_list = List.length expr_list in
+        let size_reg = Register.fresh () in
+        let list_label = set_list 1 expr_list in
+        let alloc_lb = add_to_cfg (Ecall (rd, "malloc", [size_reg], list_label)) in
+        let load_size_reg = add_to_cfg (Econst (Cint (Int64.of_int (8*(len_list+1))), size_reg, alloc_lb)) in
+        load_size_reg
   | TErange e -> raise (Error "(rtl) not implemented")
   | TEget (e1, TEvar e2) ->
       (* TODO: debug, I don't understand most of this *)
@@ -123,7 +137,17 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
   | TSblock block -> rtl_block block ctx ld r_ret l_exit
   | TSfor (v, expr, stmt) ->
       raise (Error "(rtl) not implemented") (* like rtl_while expr stmt ctx dest_lb return_reg exit_lb *)
-  | TSset (e1, e2, e3) -> raise (Error "(rtl) not implemented")
+  | TSset (e1, e2, e3) -> 
+      let base_reg = Register.fresh () in
+      let index_reg = Register.fresh () in
+      let value_reg = Register.fresh () in
+
+      let base_lb = rtl_expr e1 ctx ld base_reg in
+      let index_lb = rtl_expr e2 ctx base_lb index_reg in
+      let value_lb = rtl_expr e3 ctx index_lb value_reg in
+      let store_lb = add_to_cfg (Estore (value_reg, base_reg, 8, index_lb)) in
+      store_lb
+
   (* | TEassign_field (structExpr, field, assignExpr) ->
      let offset = field.Ttree.field_pos in
      let struct_reg = Register.fresh() in
