@@ -150,7 +150,7 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
   | TSprint expr ->
       let r_expr = Register.fresh () in
       let l_call = add_to_cfg (Ecall (r_ret, "printf", [r_expr], ld)) in
-      rtl_expr expr ctx ld r_expr; 
+      rtl_expr expr ctx l_call r_expr; 
   | TSassign (v, e) ->
       let var_reg =
         if Hashtbl.mem ctx v.v_name then Hashtbl.find ctx v.v_name
