@@ -252,7 +252,7 @@ and my_print_macro e ctx ld rd =
       let load_antislashn = add_to_cfg (Econst(Cint 10L, r_antislashn, l_antislashn)) in
 
       let is_leq_branch reg i l_true l_next =
-        add_to_cfg (Emubranch (Ops.Mjgi (i), reg, l_true, l_next))
+        add_to_cfg (Emubranch (Ops.Mjgi (i), reg, l_next, l_true))
       in
 
       (* NoneType *)

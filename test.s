@@ -16,11 +16,15 @@ main:
 	movq -8(%rbp), %r15
 	movq 8(%r15), %rsi
 	cmpq $0, %r10
-	jg L15
-	cmpq $1, %r10
-	jg L19
-	cmpq $2, %r10
-	jg L21
+	jg L52
+	movq $.LC1, %rdi
+	movq $0, %rax
+	call printf
+	movq %rax, %r10
+L13:
+	movq $10, %rdi
+	call putchar
+	movq %rax, %r10
 L11:
 	movq $16, %rdi
 	call malloc
@@ -33,40 +37,35 @@ L11:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
-L21:
-	movq $.LC1, %rdi
-	movq $0, %rax
-	call printf
-	movq %rax, %r10
-L13:
-	movq $10, %rdi
-	call putchar
-	movq %rax, %r10
-	jmp L11
-L19:
+L52:
+	cmpq $1, %r10
+	jg L51
 	cmpq $0, %rsi
-	jg L17
+	jg L18
 	movq $.LC2, %rdi
 L16:
 	movq $0, %rax
 	call printf
 	movq %rax, %r10
 	jmp L13
-L17:
+L18:
 	movq $.LC3, %rdi
 	jmp L16
-L15:
+L51:
+	cmpq $2, %r10
+	jg L11
 	movq $.LC4, %rdi
 	movq $0, %rax
 	call printf
 	movq %rax, %r10
 	jmp L13
+	jmp L11
 	.data
-.LC4:
-	.string "None"
-.LC2:
-	.string "True"
 .LC1:
-	.string "%d"
+	.string "None"
 .LC3:
+	.string "True"
+.LC4:
+	.string "%d"
+.LC2:
 	.string "False"
