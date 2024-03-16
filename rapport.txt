@@ -1,3 +1,6 @@
+Compilateur mini-Python
+par Samuel Boïté et Smaïl El Hafdi
+
 Étapes :
 
 1. Type checking  [typing.ml]
