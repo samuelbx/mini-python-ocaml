@@ -165,7 +165,7 @@ and rtl_expr_addr e ctx ld rd =
       let list_label = set_string 2 (explode s) in
       let store_lb_2 = add_to_cfg (Estore (len_reg, rd, 8, list_label)) in
       let store_lb = add_to_cfg (Estore (type_reg, rd, 0, store_lb_2)) in
-      let val_lb = add_to_cfg (Econst (Cint(Int64.of_int (8*len_list+2)), len_reg, store_lb)) in
+      let val_lb = add_to_cfg (Econst (Cint(Int64.of_int (8*(len_list+2))), len_reg, store_lb)) in
       let type_lb = add_to_cfg (Econst (Cint 3L, type_reg, val_lb)) in
       let alloc_lb = my_malloc ((len_list+2)) rd type_lb in
       alloc_lb
@@ -268,7 +268,7 @@ and my_print_macro e ctx ld rd =
         let r_counter = Register.fresh () in
         let r_one = Register.fresh () in
         (* goto cmp < increment counter < putchar < load char *)
-        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, load_antislashn)) in
+        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, Econst(Cint 1L), r_counter, load_antislashn)) in
         let l_putchar = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_char], l_incr_counter)) in
         let load_char = my_eloadr r_char r_addr 8L r_counter l_putchar in
         let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, load_char, l_antislashn)) in
