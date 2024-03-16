@@ -268,7 +268,7 @@ and my_print_macro e ctx ld rd =
         let r_counter = Register.fresh () in
         let r_one = Register.fresh () in
         (* goto cmp < increment counter < putchar < load char *)
-        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, Econst(Cint 1L), r_counter, load_antislashn)) in
+        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, load_antislashn)) in
         let l_putchar = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_char], l_incr_counter)) in
         let load_char = my_eloadr r_char r_addr 8L r_counter l_putchar in
         let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, load_char, l_antislashn)) in
