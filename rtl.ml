@@ -210,7 +210,7 @@ and val_of_addr addr_reg ld val_reg =
   (* fills type_reg and val_reg with type (between 0 and 4) and value (or len for string/list) *)
   add_to_cfg (Eload (addr_reg, 8, val_reg, ld))
   
-and rtl_expr_val_type_addr e ctx ld type_reg val_reg addr_reg =
+and rtl_expr_val_type_addr e ctx ld val_reg type_reg addr_reg =
   let load_val_lb = val_type_of_addr addr_reg ld type_reg val_reg in
   rtl_expr_addr e ctx load_val_lb addr_reg
 
