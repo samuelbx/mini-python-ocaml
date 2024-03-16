@@ -139,7 +139,10 @@ main:
 	movq 8(%r8), %r15
 	movq %r15, -8(%rbp)
 	movq 8(%r10), %r10
-	subq %r10, -8(%rbp)
+	movq -8(%rbp), %rax
+	cqto
+	idivq %r10
+	movq %rax, -8(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %rdi

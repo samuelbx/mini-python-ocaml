@@ -13,14 +13,16 @@
 
 3. RTL [rtl.ml]
 
-- Len
-- Concaténation
-- Comparaison
-- Addition de listes (addition généralisée)
-- 
+Structure de mémoire choisie : celle de l'énoncé
+Les wrappers __print__ et __len__ sont définis à ce moment-là :
+ils se chargent d'adapter leur comportement en fonction du type de la variable au runtime.
 
+Fonctionnalités manquantes :
+  [+] addition de string ou de listes
+  [+] table de vérité complète pour les non-booléens
+  [+] pretty-print des listes (qui sont pour l'instant affichées élément par élément avec \n)
 
-Pour la suite :
+Pour ce qui suit :
 
 Faute de temps (nous sommes des élèves du PA MAP avec beaucoup d'autres partiels à préparer),
 nous nous sommes (très fortement) basés sur le code github.com/AmaurX/INF564 de mini-c 
