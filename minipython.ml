@@ -52,15 +52,12 @@ let () =
 
     let rtl = Rtl.file f in
     if debug then print_endline "\n::::: RTL :::::";
-    Rtltree.print_rtlfile std_formatter rtl;
 
     let ertl = Ertl.file rtl in
     if debug then print_endline "\n::::: ERTL :::::";
-    (*Ertltree.print_ertlfile std_formatter ertl;*)
 
     let ltl = Ltl.file ertl in
     if debug then print_endline "\n::::: LTL :::::";
-    (*Ltltree.print_ltlfile std_formatter ltl;*)
 
     let code = Lin.file ltl in
 
