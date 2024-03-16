@@ -10,7 +10,6 @@ type ertlinstr =
   | Estore of register * register * int * label
   | Emunop of munop * register * label
   | Embinop of mbinop * register * register * label
-  | Emquadop of mquadop * int * register * register * int * label
   | Emubranch of mubranch * register * label * label
   | Embbranch of mbbranch * register * register * label * label
   | Ecall of ident * int * label

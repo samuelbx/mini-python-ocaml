@@ -18,6 +18,25 @@ let my_malloc size addr_reg l_next =
   let load_size_lb = add_to_cfg (Econst (Cint (Int64.of_int (8*size)), size_reg, alloc_lb)) in
   load_size_lb
 
+let my_lea r_addr r_base m r_idx l =
+  let r_m = Register.fresh() in
+  let l_add = add_to_cfg (Embinop (Ops.Madd, r_base, r_addr, l)) in
+  let l_mul = add_to_cfg (Embinop (Ops.Mmul, r_m, r_addr, l_add)) in
+  let l_load = add_to_cfg (Embinop (Ops.Mmov, r_idx, r_addr, l_mul)) in
+  add_to_cfg (Econst (Cint m, r_m, l_load))
+
+let my_eloadr r_out r_base m r_idx l =
+  let r_m = Register.fresh() in
+  let r_addr = Register.fresh() in
+  let l_load = add_to_cfg (Eload (r_addr, 0, r_out, l)) in
+  my_lea r_addr r_base m r_idx l_load
+
+let my_estorer r_in r_base m r_idx l =
+  let r_m = Register.fresh() in
+  let r_addr = Register.fresh() in
+  let l_load = add_to_cfg (Estore (r_in, r_addr, 0, l)) in
+  my_lea r_addr r_base m r_idx l_load
+
 let rec rtl_if e if_stmt else_stmt ctx ld rd l_exit =
   let test_reg = Register.fresh () in
   let if_lb = rtl_stmt if_stmt ctx ld rd l_exit in
@@ -248,7 +267,7 @@ and my_print_macro e ctx ld rd =
         let lbl_toreplace = Label.fresh () in
         let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, lbl_toreplace)) in
         let l_putchar = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_char], l_incr_counter)) in
-        let load_char = add_to_cfg (EloadR(r_char, 0, r_addr, 8, r_counter, l_putchar)) in (* 0+ r_addr+8*r_counter *)
+        let load_char = my_eloadr r_char r_addr 8L r_counter l_putchar in
         let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, load_char, l_antislashn)) in
         let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_cmp)) in
         add_to_cfg (Econst(Cint 0L, r_counter, l_loadone))
@@ -264,11 +283,8 @@ and my_print_macro e ctx ld rd =
         let lbl_toreplace = Label.fresh () in
         let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, lbl_toreplace)) in
         let l_putchar = add_to_cfg (Ecall (r_ret_useless, "__print__", [r_elem_addr], l_incr_counter)) in
-        let l_add = add_to_cfg (Embinop (Ops.Madd, r_addr, r_elem_addr, l_putchar)) in
-        let l_mul = add_to_cfg (Embinop (Ops.Mmul, r_eight, r_elem_addr, l_add)) in
-        let l_eight = add_to_cfg (Econst(Cint 8L, r_eight, l_mul)) in
-        let l_move = add_to_cfg (Embinop (Ops.Mmov, r_counter, r_elem_addr, l_eight)) in
-        let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, l_move, l_antislashn)) in
+        let l_lea = my_lea r_elem_addr r_addr 8L r_counter l_putchar in
+        let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, l_lea, l_antislashn)) in
         let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_cmp)) in
         add_to_cfg (Econst(Cint 0L, r_counter, l_loadone))
       in
@@ -301,7 +317,7 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
         let index_reg = Register.fresh () in
         let list_reg = Register.fresh () in
         let value_reg = Register.fresh () in
-        let store_lb = add_to_cfg (EstoreR (value_reg, 0, list_reg, index_reg, 8, ld)) in
+        let store_lb = my_estorer value_reg list_reg 8L index_reg ld in
         let list_lb = rtl_expr_val e1 ctx store_lb list_reg in
         let index_lb = rtl_expr_val e2 ctx list_lb index_reg in
         let value_lb = rtl_expr_val e3 ctx index_lb value_reg in
