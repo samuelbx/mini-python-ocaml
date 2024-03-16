@@ -3,24 +3,65 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-40, %rsp
+	addq $-56, %rsp
 	movq $40, %rdi
 	call malloc
-	movq %rax, -8(%rbp)
-	movq $3, %r10
+	movq %rax, -56(%rbp)
+	movq $4, %r10
 	movq $3, %r8
 	movq %r10, 0(%r15)
-	movq %r15, -8(%rbp)
+	movq %r15, -56(%rbp)
 	movq %r8, 8(%r15)
-	movq %r15, -8(%rbp)
-	movq $97, %r10
+	movq %r15, -56(%rbp)
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r10
+	movq $2, %r9
+	movq $1, %r8
+	movq %r9, 0(%r10)
+	movq %r8, 8(%r10)
 	movq %r10, 16(%r15)
-	movq %r15, -8(%rbp)
-	movq $97, %r10
+	movq %r15, -56(%rbp)
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r10
+	movq $2, %r9
+	movq $2, %r8
+	movq %r9, 0(%r10)
+	movq %r8, 8(%r10)
 	movq %r10, 24(%r15)
-	movq %r15, -8(%rbp)
-	movq $97, %r10
+	movq %r15, -56(%rbp)
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r10
+	movq $2, %r9
+	movq $3, %r8
+	movq %r9, 0(%r10)
+	movq %r8, 8(%r10)
 	movq %r10, 32(%r15)
+	movq %r15, -56(%rbp)
+	movq -56(%rbp), %r10
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r10
+	movq $2, %r9
+	movq $0, %r8
+	movq %r9, 0(%r10)
+	movq %r8, 8(%r10)
+	movq 8(%r10), %r15
+	movq %r15, -48(%rbp)
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r10
+	movq $2, %r9
+	movq $0, %r8
+	movq %r9, 0(%r10)
+	movq %r8, 8(%r10)
+	movq $8, %r9
+	movq -48(%rbp), %r8
+	imulq %r9, %r8
+	addq %r10, %r8
+	movq 0(%r8), %r15
 	movq %r15, -8(%rbp)
 	movq %r11, %r11
 	movq 0(%r11), %r8
@@ -38,10 +79,6 @@ main:
 	subq %r8, %r10
 	testq %r10, %r10
 	jz L23
-	movq $3, %r10
-	subq %r8, %r10
-	testq %r10, %r10
-	jz L38
 L10:
 	movq $16, %rdi
 	call malloc
@@ -54,34 +91,6 @@ L10:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
-L38:
-	movq $0, -16(%rbp)
-L37:
-	movq %r11, %r11
-	movq 8(%r11), %r10
-	movq $1, -24(%rbp)
-	movq $2, %r8
-	subq -16(%rbp), %r10
-	testq %r10, %r10
-	jnz L32
-L12:
-	movq $10, %rdi
-	call putchar
-	movq %rax, %r10
-	jmp L10
-L32:
-	movq -16(%rbp), %r10
-	addq %r8, %r10
-	movq $8, %r8
-	imulq %r8, %r10
-	addq -8(%rbp), %r10
-	movq 0(%r10), %rdi
-	call putchar
-	movq %rax, %r10
-	movq -16(%rbp), %r15
-	addq -24(%rbp), %r15
-	movq %r15, -16(%rbp)
-	jmp L37
 L23:
 	movq $.LC1, %rdi
 	movq %r11, %r11
@@ -89,7 +98,11 @@ L23:
 	movq $0, %rax
 	call printf
 	movq %rax, %r10
-	jmp L12
+L12:
+	movq $10, %rdi
+	call putchar
+	movq %rax, %r10
+	jmp L10
 L20:
 	movq $0, %r10
 	subq %r9, %r10
