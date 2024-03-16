@@ -3,7 +3,7 @@
 __print__:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-56, %rsp
+	addq $-72, %rsp
 	movq %rdi, -8(%rbp)
 	movq -8(%rbp), %r15
 	movq 0(%r15), %r10
@@ -101,7 +101,7 @@ L5:
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-56, %rsp
+	addq $-72, %rsp
 	movq $16, %rdi
 	call malloc
 	movq %rax, %rdi
@@ -126,14 +126,23 @@ main:
 	movq %r8, 0(%rdi)
 	movq %r10, 8(%rdi)
 	call __print__
-	movq $40, %rdi
+	movq $32, %rdi
 	call malloc
 	movq %rax, -56(%rbp)
 	movq $4, %r10
-	movq $3, %r8
+	movq $2, %r8
 	movq -56(%rbp), %r11
 	movq %r10, 0(%r11)
 	movq -56(%rbp), %r11
+	movq %r8, 8(%r11)
+	movq $40, %rdi
+	call malloc
+	movq %rax, -64(%rbp)
+	movq $4, %r10
+	movq $3, %r8
+	movq -64(%rbp), %r11
+	movq %r10, 0(%r11)
+	movq -64(%rbp), %r11
 	movq %r8, 8(%r11)
 	movq $16, %rdi
 	call malloc
@@ -142,7 +151,7 @@ main:
 	movq $1, %r8
 	movq %r9, 0(%r10)
 	movq %r8, 8(%r10)
-	movq -56(%rbp), %r11
+	movq -64(%rbp), %r11
 	movq %r10, 16(%r11)
 	movq $16, %rdi
 	call malloc
@@ -151,7 +160,7 @@ main:
 	movq $2, %r8
 	movq %r9, 0(%r10)
 	movq %r8, 8(%r10)
-	movq -56(%rbp), %r11
+	movq -64(%rbp), %r11
 	movq %r10, 24(%r11)
 	movq $16, %rdi
 	call malloc
@@ -160,8 +169,50 @@ main:
 	movq $3, %r8
 	movq %r9, 0(%r10)
 	movq %r8, 8(%r10)
-	movq -56(%rbp), %r11
+	movq -64(%rbp), %r11
 	movq %r10, 32(%r11)
+	movq -64(%rbp), %r15
+	movq -56(%rbp), %r11
+	movq %r15, 16(%r11)
+	movq $40, %rdi
+	call malloc
+	movq %rax, -72(%rbp)
+	movq $4, %r10
+	movq $3, %r8
+	movq -72(%rbp), %r11
+	movq %r10, 0(%r11)
+	movq -72(%rbp), %r11
+	movq %r8, 8(%r11)
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r10
+	movq $2, %r9
+	movq $4, %r8
+	movq %r9, 0(%r10)
+	movq %r8, 8(%r10)
+	movq -72(%rbp), %r11
+	movq %r10, 16(%r11)
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r10
+	movq $2, %r9
+	movq $5, %r8
+	movq %r9, 0(%r10)
+	movq %r8, 8(%r10)
+	movq -72(%rbp), %r11
+	movq %r10, 24(%r11)
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r10
+	movq $2, %r9
+	movq $6, %r8
+	movq %r9, 0(%r10)
+	movq %r8, 8(%r10)
+	movq -72(%rbp), %r11
+	movq %r10, 32(%r11)
+	movq -72(%rbp), %r15
+	movq -56(%rbp), %r11
+	movq %r15, 24(%r11)
 	movq -56(%rbp), %rdi
 	call __print__
 	movq $16, %rdi
