@@ -13,7 +13,12 @@
 
 3. RTL [rtl.ml]
 
-TODO: décrire la memory structure choisie
+- Len
+- Concaténation
+- Comparaison
+- Addition de listes (addition généralisée)
+- 
+
 
 Pour la suite :
 

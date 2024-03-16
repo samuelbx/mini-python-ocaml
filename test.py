@@ -1,2 +1,2 @@
-for i in list(range(10)):
-    print(i)
+x = [1, 2, 3]
+print(len(x))

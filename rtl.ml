@@ -251,6 +251,9 @@ and rtl_expr_val e ctx ld val_reg =
   let load_val_lb = val_of_addr addr_reg ld val_reg in
   rtl_expr_addr e ctx load_val_lb addr_reg
 
+and my_len_macro_ r_addr ctx ld rd =
+  val_of_addr r_addr ld rd
+
 and my_print_macro_ r_addr ctx ld rd =
   let r_ret_useless = Register.fresh () in
       let r_type = Register.fresh () in
@@ -458,8 +461,7 @@ let rtl_def ((fn, stmt) : Ast.tdef) =
   Hashtbl.replace function_table fn.fn_name fun_descr;
   fun_descr
 
-let file (p : tfile) : rtlfile =
-  (* TODO: handle global / local context *)
+let rec add_macro name body =
   let r_arg ctx v =
     let r = Register.fresh () in
     Hashtbl.add ctx v.Ast.v_name r;
@@ -467,17 +469,17 @@ let file (p : tfile) : rtlfile =
   in
   let print_register = Register.fresh () in
   let print_var = {
-    v_name = "__print_var__";
+    v_name = name ^ "var";
     v_ofs = 0;
   } in
   let ctx = Hashtbl.create 16 in
   Hashtbl.add ctx print_var.v_name print_register;
   let r_result = Register.fresh () in
   let l_exit = Label.fresh () in
-  let entry = my_print_macro_ print_register ctx l_exit r_result in
+  let entry = body print_register ctx l_exit r_result in
   let print_fun =
     {
-      fun_name = "__print__";
+      fun_name = name;
       fun_formals = [print_register] ;
       fun_result = r_result;
       fun_ctx = Register.set_of_list [];
@@ -487,4 +489,9 @@ let file (p : tfile) : rtlfile =
     }
   in
   Hashtbl.add function_table print_fun.fun_name print_fun;
-  { funs = [print_fun] @ List.map (rtl_def) p }
+  print_fun
+
+let file (p : tfile) : rtlfile =
+  (* TODO: handle global / local context *)
+  { funs = [add_macro "__print__" my_print_macro_;
+            add_macro "__len__" my_len_macro_] @ List.map (rtl_def) p }
