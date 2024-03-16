@@ -82,6 +82,17 @@ and rtl_unop u e ctx ld rd =
       let r_result = add_to_cfg (Emunop (Ops.Msetei 0L, rd, ld)) in
       rtl_expr_val e ctx r_result rd
 
+and alloc_int pre_val_reg rd ld =
+  let val_reg = Register.fresh () in
+  let type_reg = Register.fresh () in
+  let addr_reg = Register.fresh () in
+  let l_move = add_to_cfg (Embinop (Ops.Mmov, addr_reg, rd, ld)) in
+  let store_lb_2 = add_to_cfg (Estore (pre_val_reg, addr_reg, 8, l_move)) in
+  let store_lb = add_to_cfg (Estore (type_reg, addr_reg, 0, store_lb_2)) in
+  let type_lb = add_to_cfg (Econst (Cint 2L, type_reg, store_lb)) in
+  let alloc_lb = my_malloc 2 addr_reg type_lb in
+  alloc_lb
+
 and rtl_binop b e1 e2 ctx ld rd =
   let instr_translate = function
     | Badd -> Ops.Madd
@@ -151,16 +162,9 @@ and rtl_expr_addr e ctx ld rd =
     let alloc_lb = my_malloc 2 addr_reg val_type_lb in
     alloc_lb
   | TEcst (Cint i) ->
-    let val_reg = Register.fresh () in
-    let type_reg = Register.fresh () in
-    let addr_reg = Register.fresh () in
-    let l_move = add_to_cfg (Embinop (Ops.Mmov, addr_reg, rd, ld)) in
-    let store_lb_2 = add_to_cfg (Estore (val_reg, addr_reg, 8, l_move)) in
-    let store_lb = add_to_cfg (Estore (type_reg, addr_reg, 0, store_lb_2)) in
-    let val_lb = add_to_cfg (Econst (Cint i, val_reg, store_lb)) in
-    let type_lb = add_to_cfg (Econst (Cint 2L, type_reg, val_lb)) in
-    let alloc_lb = my_malloc 2 addr_reg type_lb in
-    alloc_lb
+    let val_reg_pre = Register.fresh () in
+    let l_alloc = alloc_int val_reg_pre rd ld in
+    add_to_cfg (Econst (Cint 0L, val_reg_pre, l_alloc))
   | TEcst (Cbool b) ->
     let val_reg = Register.fresh () in
     let type_reg = Register.fresh () in
@@ -252,7 +256,9 @@ and rtl_expr_val e ctx ld val_reg =
   rtl_expr_addr e ctx load_val_lb addr_reg
 
 and my_len_macro_ r_addr ctx ld rd =
-  val_of_addr r_addr ld rd
+  let val_reg = Register.fresh () in
+  let l_alloc = alloc_int val_reg rd ld in
+  val_of_addr r_addr l_alloc val_reg
 
 and my_print_macro_ r_addr ctx ld rd =
   let r_ret_useless = Register.fresh () in
