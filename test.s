@@ -4,7 +4,7 @@ main:
 	pushq %rbp
 	movq %rsp, %rbp
 	addq $-8, %rsp
-	movq $24, %rdi
+	movq $32, %rdi
 	call malloc
 	movq %rax, -8(%rbp)
 	movq $4, %r8
@@ -13,7 +13,7 @@ main:
 	movq %r15, -8(%rbp)
 	movq %r10, 8(%r15)
 	movq %r15, -8(%rbp)
-	movq $16, %rdi
+	movq $24, %rdi
 	call malloc
 	movq %rax, %r10
 	movq $2, %r9
@@ -24,7 +24,7 @@ main:
 	movq %r15, -8(%rbp)
 	movq %r11, %r11
 	movq 8(%r11), %r10
-	movq $16, %rdi
+	movq $24, %rdi
 	call malloc
 	movq %rax, %r10
 	movq $2, %r9
