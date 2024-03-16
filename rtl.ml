@@ -271,8 +271,7 @@ and my_print_macro e ctx ld rd =
         let lbl_print = add_to_cfg (Ecall (r_ret_useless, "printf", [r_txt], load_antislashn)) in
         let lbl_false = add_to_cfg(Econst(Cstring "False", r_txt, lbl_print)) in
         let lbl_true = add_to_cfg(Econst(Cstring "True", r_txt, lbl_print)) in
-        (*is_equal_branch r_val 0L lbl_false lbl_true*)
-        lbl_true
+        is_equal_branch r_val 0L lbl_false lbl_true
       in
       
       (* Int *)
