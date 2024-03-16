@@ -7,6 +7,13 @@ exception Error of string
 let graph = ref Label.M.empty
 let function_table = Hashtbl.create 16
 
+let var_reg ctx v =
+  if Hashtbl.mem ctx v.v_name then Hashtbl.find ctx v.v_name
+  else
+    let new_reg = Register.fresh () in
+    Hashtbl.add ctx v.v_name new_reg;
+    new_reg
+
 let add_to_cfg i =
   let l = Label.fresh () in
   graph := Label.M.add l i !graph;
@@ -180,7 +187,7 @@ and rtl_expr_addr e ctx ld rd =
       alloc_lb
   | TEvar v ->
     print_endline "eror 2";
-    add_to_cfg (Embinop (Ops.Mmov, Hashtbl.find ctx v.v_name, rd, ld))
+    add_to_cfg (Embinop (Ops.Mmov, var_reg ctx v, rd, ld))
   | TEbinop (binop, e1, e2) -> rtl_binop binop e1 e2 ctx ld rd
   | TEunop (unop, expr) -> rtl_unop unop expr ctx ld rd
   | TEcall (fn, expr_list) -> rtl_call fn expr_list ctx ld rd
@@ -209,7 +216,7 @@ and rtl_expr_addr e ctx ld rd =
       let r_val_e2 = Register.fresh () in
       let r_two = Register.fresh () in
       let l_load = my_eloadr rd r_addr_e1 8L r_val_e2 ld in
-      let l_addr_e1 = rtl_expr_addr e2 ctx l_load r_addr_e1 in
+      let l_addr_e1 = rtl_expr_addr e1 ctx l_load r_addr_e1 in
       let l_add = add_to_cfg (Embinop (Ops.Madd, r_two, r_val_e2, l_addr_e1)) in
       let l_load_two = add_to_cfg (Econst (Cint 2L, r_two, l_add)) in
       rtl_expr_val e2 ctx l_load_two r_val_e2
@@ -373,16 +380,8 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
       print_endline "testok";
       my_print_macro e ctx ld r_ret
   | TSassign (v, e) ->
-      print_endline "test1";
-      let var_reg =
-        if Hashtbl.mem ctx v.v_name then Hashtbl.find ctx v.v_name
-        else
-          let new_reg = Register.fresh () in
-          Hashtbl.add ctx v.v_name new_reg;
-          new_reg
-      in
       let calc_reg = Register.fresh () in
-      let assign_lb = add_to_cfg (Embinop (Ops.Mmov, calc_reg, var_reg, ld)) in
+      let assign_lb = add_to_cfg (Embinop (Ops.Mmov, calc_reg, var_reg ctx v, ld)) in
       rtl_expr_addr e ctx assign_lb calc_reg
 
 and rtl_stmt_list stmtlist ctx ld (result : Register.t) l_exit =
