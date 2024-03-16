@@ -16,11 +16,11 @@ main:
 	movq -8(%rbp), %r15
 	movq 8(%r15), %rsi
 	cmpq $0, %r10
-	jle L15
+	jg L15
 	cmpq $1, %r10
-	jle L19
+	jg L19
 	cmpq $2, %r10
-	jle L21
+	jg L21
 L11:
 	movq $16, %rdi
 	call malloc
@@ -45,7 +45,7 @@ L13:
 	jmp L11
 L19:
 	cmpq $0, %rsi
-	jle L17
+	jg L17
 	movq $.LC2, %rdi
 L16:
 	movq $0, %rax
