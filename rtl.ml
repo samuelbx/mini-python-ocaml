@@ -19,9 +19,12 @@ let add_to_cfg i =
   graph := Label.M.add l i !graph;
   l
 
+let my_malloc_reg size_reg addr_reg l_next =
+  add_to_cfg (Ecall (addr_reg, "malloc", [size_reg], l_next))
+
 let my_malloc size addr_reg l_next =
   let size_reg = Register.fresh () in
-  let alloc_lb = add_to_cfg (Ecall (addr_reg, "malloc", [size_reg], l_next)) in
+  let alloc_lb = my_malloc_reg size_reg addr_reg l_next in
   let load_size_lb = add_to_cfg (Econst (Cint (Int64.of_int (8*(size))), size_reg, alloc_lb)) in
   load_size_lb
 
@@ -110,8 +113,7 @@ and compare_type_macro r_type l_none l_bool l_int l_string l_list ld =
   let l_cmp0 = is_leq_branch r_type 0L l_none l_cmp1 in
   l_cmp0
 
-and rtl_binop b e1 e2 ctx ld rd =
-  let instr_translate = function
+and instr_translate = function
     | Badd -> Ops.Madd
     | Bsub -> Ops.Msub
     | Bmul -> Ops.Mmul
@@ -123,7 +125,16 @@ and rtl_binop b e1 e2 ctx ld rd =
     | Beq -> Ops.Msete
     | Bneq -> Ops.Msetne
     | _ -> raise (Error("(rtl) rtl_binop received bad type"))
-  in
+
+and add_ints b r_v1 r_v2 ctx ld rd =
+  let instr = instr_translate b in
+  let r_v1 = Register.fresh () in
+  let r_v2 = Register.fresh () in
+  let l_cpy_result = alloc_int r_v1 rd ld in
+  let l_do_op = add_to_cfg (Embinop (instr, r_v2, r_v1, l_cpy_result)) in
+  l_do_op
+
+and rtl_binop b e1 e2 ctx ld rd =
   match b with
   | Beq | Bneq | Bge | Bgt | Ble | Blt ->
     let instr = instr_translate b in
@@ -135,15 +146,21 @@ and rtl_binop b e1 e2 ctx ld rd =
     let l_load_v1 = rtl_expr_val e1 ctx l_load_v2 r_v1 in
     l_load_v1
 
-  | Badd | Bsub | Bdiv | Bmul | Bmod ->
-    let instr = instr_translate b in
+  | Bsub | Bdiv | Bmul | Bmod ->
     let r_v1 = Register.fresh () in
     let r_v2 = Register.fresh () in
-    let l_cpy_result = alloc_int r_v1 rd ld in
-    let l_do_op = add_to_cfg (Embinop (instr, r_v2, r_v1, l_cpy_result)) in
+    let l_do_op = add_ints b r_v1 r_v2 ctx ld rd in
     let l_load_v2 = rtl_expr_val e2 ctx l_do_op r_v2 in
     let l_load_v1 = rtl_expr_val e1 ctx l_load_v2 r_v1 in
     l_load_v1
+    
+  | Badd ->
+    let r_addr1 = Register.fresh () in
+    let r_addr2 = Register.fresh () in
+    let l_call = add_to_cfg (Ecall (rd, "__add__", [r_addr1; r_addr2], ld)) in
+    let l_load_2 = rtl_expr_addr e2 ctx l_call r_addr2 in
+    let l_load_1 = rtl_expr_addr e1 ctx l_call r_addr2 in
+    l_load_1
   
   | Band ->
       let r_e1 = Register.fresh () in
@@ -298,6 +315,40 @@ and my_len_macro_ r_addr ctx ld rd =
   let l_alloc = alloc_int val_reg rd ld in
   val_of_addr r_addr l_alloc val_reg
 
+and cpy_block r_addr_src r_addr_dest ofs r_size ld =
+  let r_counter = Register.fresh () in
+  let r_char = Register.fresh () in
+
+  let l_incr_counter = Label.fresh () in
+  let store_char = my_estorer r_char r_addr_dest 8L r_counter l_incr_counter in
+  let load_char = my_eloadr r_char r_addr_src 8L r_counter store_char in
+  let l_cmp = add_to_cfg (Embbranch (Ops.Mjle, r_counter, r_size, load_char, ld)) in
+  graph := Label.M.add l_incr_counter (Emunop (Ops.Maddi 1L, r_counter, l_cmp)) !graph;
+
+  let add_ofs_dest = add_to_cfg (Emunop (Ops.Maddi ofs, r_addr_dest, l_cmp)) in
+  let add_ofs_src = add_to_cfg (Emunop (Ops.Maddi ofs, r_addr_src, add_ofs_dest)) in
+
+  add_to_cfg (Econst (Cint 0L, r_counter, add_ofs_src))
+
+and my_add_macro_ r_e1 r_e2 ctx ld rd =
+  let add_strings_or_lists r_v1 r_v2 =
+    let final_addr_reg = Register.fresh () in
+    let cpy_string_2 = cpy_block r_e2 final_addr_reg 2L r_v2 ld in
+    let add_size = add_to_cfg (Embinop (Ops.Madd, r_v1, final_addr_reg, cpy_string_2)) in
+    let cpy_string_1 = cpy_block r_e1 final_addr_reg 2L r_v1 cpy_string_2 in
+    let l_alloc = my_malloc_reg r_v2 final_addr_reg cpy_string_1 in
+    add_to_cfg (Embinop (Ops.Madd, r_v1, r_v2, l_alloc))
+  in
+
+  let type_reg = Register.fresh () in
+  let r_v1 = Register.fresh () in
+  let r_v2 = Register.fresh () in
+  let l_int = add_ints Badd r_v1 r_v2 ctx ld rd in
+  let l_string_list = add_strings_or_lists r_v1 r_v2 in
+  let l_cmp = compare_type_macro type_reg ld ld l_int l_string_list l_string_list ld in
+  let l_load_v2 = val_of_addr r_e2 l_cmp r_v2 in
+  let l_load_v1 = val_of_addr r_e1 l_load_v2 r_v1 in
+  type_of_addr r_e1 l_load_v1 type_reg
 
 and my_print_macro_ r_addr ctx ld rd =
   let r_ret_useless = Register.fresh () in
@@ -512,7 +563,45 @@ let rec add_macro name body =
   Hashtbl.add function_table print_fun.fun_name print_fun;
   print_fun
 
+(* TODO: factor with previous function *)
+let rec add_macro_2_vars name body =
+  let r_arg ctx v =
+    let r = Register.fresh () in
+    Hashtbl.add ctx v.Ast.v_name r;
+    r
+  in
+  let reg_1 = Register.fresh () in
+  let reg_2 = Register.fresh () in
+  let var_1 = {
+    v_name = name ^ "var1";
+    v_ofs = 0;
+  } in
+  let var_2 = {
+    v_name = name ^ "var2";
+    v_ofs = 0;
+  } in
+  let ctx = Hashtbl.create 16 in
+  Hashtbl.add ctx var_1.v_name reg_1;
+  Hashtbl.add ctx var_2.v_name reg_2;
+  let r_result = Register.fresh () in
+  let l_exit = Label.fresh () in
+  let entry = body reg_1 reg_2 ctx l_exit r_result in
+  let print_fun =
+    {
+      fun_name = name;
+      fun_formals = [reg_1; reg_2] ;
+      fun_result = r_result;
+      fun_ctx = Register.set_of_list [];
+      fun_entry = entry;
+      fun_exit = l_exit;
+      fun_body = !graph;
+    }
+  in
+  Hashtbl.add function_table print_fun.fun_name print_fun;
+  print_fun
+
 let file (p : tfile) : rtlfile =
   (* TODO: handle global / local context *)
   { funs = [add_macro "__print__" my_print_macro_;
-            add_macro "__len__" my_len_macro_] @ List.map (rtl_def) p }
+            add_macro "__len__" my_len_macro_;
+            add_macro_2_vars "__add__" my_add_macro_] @ List.map (rtl_def) p }
