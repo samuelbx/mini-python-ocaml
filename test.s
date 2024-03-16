@@ -3,7 +3,7 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-40, %rsp
+	addq $-48, %rsp
 	movq $24, %rdi
 	call malloc
 	movq %rax, -8(%rbp)
@@ -45,7 +45,9 @@ L10:
 L23:
 	movq $.LC1, %rdi
 	movq %r11, %r11
-	movq 8(%r11), %rsi
+	movq 8(%r11), %r15
+	movq %r15, -8(%rbp)
+	movq -16(%rbp), %rsi
 	movq $0, %rax
 	call printf
 	movq %rax, %r10
