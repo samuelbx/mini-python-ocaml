@@ -552,7 +552,7 @@ L197:
 	movq -48(%rbp), %r10
 	movq -24(%rbp), %r10
 	addq $2, %r10
-	cmpq %r8, -24(%rbp)
+	cmpq -24(%rbp), %r8
 	jl L20
 	movq $0, -320(%rbp)
 	movq $16, %rdi
