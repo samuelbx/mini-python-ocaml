@@ -25,7 +25,7 @@ main:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
-def___print__:
+__print__:
 	pushq %rbp
 	movq %rsp, %rbp
 	addq $-40, %rsp
