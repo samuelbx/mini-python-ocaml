@@ -272,7 +272,7 @@ and my_print_macro e ctx ld rd =
         let l_placeholder = Label.fresh () in
 
         (* goto cmp < increment counter < putchar < load char *)
-        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, l_placeholder)) in
+        let l_incr_counter = Label.fresh () in
         let l_putchar = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_char], l_incr_counter)) in
         let load_char = my_eloadr r_char r_addr 8L r_idx l_putchar in
         let l_set_idx_2 = add_to_cfg (Embinop (Ops.Madd, r_two, r_idx, load_char)) in
