@@ -123,8 +123,8 @@ main:
 	movq $107, %r10
 	movq %r10, 24(%rdi)
 	call __len__
-	movq %rax, %rdi
-	call __print__
+	movq %rax, %r10
+	movq 8(%r10), %r10
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
