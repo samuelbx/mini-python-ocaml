@@ -222,11 +222,11 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
         let offset_reg = Register.fresh () in
         let base_reg = Register.fresh () in
         let value_reg = Register.fresh () in
-        let base_lb = rtl_expr_val e1 ctx ld base_reg in
+        let store_lb = add_to_cfg (EstoreR (value_reg, 0, base_reg, offset_reg, 8, ld)) in
+        let base_lb = rtl_expr_val e1 ctx store_lb base_reg in
         let offset_lb = rtl_expr_val e2 ctx base_lb offset_reg in
         let value_lb = rtl_expr_val e3 ctx offset_lb value_reg in
-        let store_lb = add_to_cfg (EstoreR (value_reg, 0, base_reg, offset_reg, 8,  value_lb)) in
-        store_lb
+        value_lb
 
     | TEcst (Cint i) -> 
         let offset = Int64.to_int i * 8 in
