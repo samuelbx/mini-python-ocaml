@@ -116,8 +116,8 @@ and rtl_expr e ctx ld rd =
         let size_reg = Register.fresh () in
         let list_label = set_list 1 expr_list in
         let alloc_lb = add_to_cfg (Ecall (rd, "malloc", [size_reg], list_label)) in
-        let load_size_reg = add_to_cfg (Econst (Cint (Int64.of_int (8*(len_list+1))), size_reg, alloc_lb)) in
-        load_size_reg
+        let load_size_lb = add_to_cfg (Econst (Cint (Int64.of_int (8*(len_list+1))), size_reg, alloc_lb)) in
+        load_size_lb
   | TErange e -> raise (Error "(rtl) not implemented")
   | TEget (e1, TEvar e2) ->
       (* TODO: debug, I don't understand most of this *)
@@ -138,15 +138,30 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
   | TSfor (v, expr, stmt) ->
       raise (Error "(rtl) not implemented") (* like rtl_while expr stmt ctx dest_lb return_reg exit_lb *)
   | TSset (e1, e2, e3) -> 
-      let base_reg = Register.fresh () in
-      let index_reg = Register.fresh () in
-      let value_reg = Register.fresh () in
+          match e2 with 
+   | TEvar v -> 
+        let var_reg =
+            if Hashtbl.mem ctx v.v_name then Hashtbl.find ctx v.v_name
+            else raise (Error "Variable not found in context")
+        in
+        let offset_reg = Register.fresh () in
+        let base_reg = Register.fresh () in
+        let value_reg = Register.fresh () in
+        let base_lb = rtl_expr e1 ctx ld base_reg in
+        let offset_lb = rtl_expr e2 ctx base_lb offset_reg in
+        let value_lb = rtl_expr e3 ctx offset_lb value_reg in
+        let store_lb = add_to_cfg (EstoreR (value_reg, 0, base_reg, offset_reg, 8,  value_lb)) in
+        store_lb
 
-      let base_lb = rtl_expr e1 ctx ld base_reg in
-      let index_lb = rtl_expr e2 ctx base_lb index_reg in
-      let value_lb = rtl_expr e3 ctx index_lb value_reg in
-      let store_lb = add_to_cfg (Estore (value_reg, base_reg, 8, index_lb)) in
-      store_lb
+    | TEcst (Cint i) -> 
+        let offset = Int64.to_int i * 8 in
+        let base_reg = Register.fresh () in
+        let value_reg = Register.fresh () in
+        let base_lb = rtl_expr e1 ctx ld base_reg in
+        let value_lb = rtl_expr e3 ctx base_lb value_reg in
+        let store_lb = add_to_cfg (Estore (value_reg, base_reg, offset, value_lb)) in
+        store_lb
+    | _ -> raise (Error "Invalid expression in set")
 
   (* | TEassign_field (structExpr, field, assignExpr) ->
      let offset = field.Ttree.field_pos in
