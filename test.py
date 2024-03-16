@@ -1,2 +1,2 @@
-x = [1, 2, 3]
+x = "ok"
 print(len(x))
