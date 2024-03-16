@@ -508,7 +508,7 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
 
   | TSeval e ->
       let result_reg = Register.fresh () in
-      rtl_expr_val e ctx ld result_reg
+      rtl_expr_addr e ctx ld result_reg
   | TSprint e ->
     let r_addr = Register.fresh () in
     let call_l = add_to_cfg (Ecall (r_ret, "__print__", [r_addr], ld)) in
