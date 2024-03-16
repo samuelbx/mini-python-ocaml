@@ -82,16 +82,33 @@ and rtl_unop u e ctx ld rd =
       let r_result = add_to_cfg (Emunop (Ops.Msetei 0L, rd, ld)) in
       rtl_expr_val e ctx r_result rd
 
-and alloc_int pre_val_reg rd ld =
+and alloc_number type_i pre_val_reg rd ld =
   let val_reg = Register.fresh () in
   let type_reg = Register.fresh () in
   let addr_reg = Register.fresh () in
   let l_move = add_to_cfg (Embinop (Ops.Mmov, addr_reg, rd, ld)) in
   let store_lb_2 = add_to_cfg (Estore (pre_val_reg, addr_reg, 8, l_move)) in
   let store_lb = add_to_cfg (Estore (type_reg, addr_reg, 0, store_lb_2)) in
-  let type_lb = add_to_cfg (Econst (Cint 2L, type_reg, store_lb)) in
+  let type_lb = add_to_cfg (Econst (Cint type_i, type_reg, store_lb)) in
   let alloc_lb = my_malloc 2 addr_reg type_lb in
   alloc_lb
+
+and alloc_int pre_val_reg rd ld =
+  alloc_number 2L pre_val_reg rd ld
+
+and alloc_bool pre_val_reg rd ld =
+  alloc_number 1L pre_val_reg rd ld
+
+and is_leq_branch reg i l_true l_next =
+  add_to_cfg (Emubranch (Ops.Mjlei (i), reg, l_true, l_next))
+
+and compare_type_macro r_type l_none l_bool l_int l_string l_list ld =
+  let l_cmp4 = is_leq_branch r_type 4L l_list ld in
+  let l_cmp3 = is_leq_branch r_type 3L l_string l_cmp4 in
+  let l_cmp2 = is_leq_branch r_type 2L l_int l_cmp3 in
+  let l_cmp1 = is_leq_branch r_type 1L l_bool l_cmp2 in
+  let l_cmp0 = is_leq_branch r_type 0L l_none l_cmp1 in
+  l_cmp0
 
 and rtl_binop b e1 e2 ctx ld rd =
   let instr_translate = function
@@ -108,14 +125,26 @@ and rtl_binop b e1 e2 ctx ld rd =
     | _ -> raise (Error("(rtl) rtl_binop received bad type"))
   in
   match b with
-  | Badd | Bdiv | Bmul | Bsub | Beq | Bneq | Bge | Bgt | Ble | Blt ->
-      let instr = instr_translate b in
-      let r_e1 = Register.fresh () in
-      let r_e2 = Register.fresh () in
-      let l_cpy_result = add_to_cfg (Embinop (Ops.Mmov, r_e1, rd, ld)) in
-      let l_do_op = add_to_cfg (Embinop (instr, r_e2, r_e1, l_cpy_result)) in
-      let l_e2 = rtl_expr_val e2 ctx l_do_op r_e2 in
-      rtl_expr_val e1 ctx l_e2 r_e1
+  | Beq | Bneq | Bge | Bgt | Ble | Blt ->
+    let instr = instr_translate b in
+    let r_v1 = Register.fresh () in
+    let r_v2 = Register.fresh () in
+    let l_cpy_result = alloc_bool r_v1 rd ld in
+    let l_do_op = add_to_cfg (Embinop (instr, r_v2, r_v1, l_cpy_result)) in
+    let l_load_v2 = rtl_expr_val e2 ctx l_do_op r_v2 in
+    let l_load_v1 = rtl_expr_val e1 ctx l_load_v2 r_v1 in
+    l_load_v1
+
+  | Badd | Bsub | Bdiv | Bmul | Bmod ->
+    let instr = instr_translate b in
+    let r_v1 = Register.fresh () in
+    let r_v2 = Register.fresh () in
+    let l_cpy_result = alloc_int r_v1 rd ld in
+    let l_do_op = add_to_cfg (Embinop (instr, r_v2, r_v1, l_cpy_result)) in
+    let l_load_v2 = rtl_expr_val e2 ctx l_do_op r_v2 in
+    let l_load_v1 = rtl_expr_val e1 ctx l_load_v2 r_v1 in
+    l_load_v1
+  
   | Band ->
       let r_e1 = Register.fresh () in
       let r_e2 = Register.fresh () in
@@ -246,6 +275,10 @@ and val_of_addr addr_reg ld val_reg =
   (* fills type_reg and val_reg with type (between 0 and 4) and value (or len for string/list) *)
   add_to_cfg (Eload (addr_reg, 8, val_reg, ld))
   
+and type_of_addr addr_reg ld val_reg =
+  (* fills type_reg and val_reg with type (between 0 and 4) and value (or len for string/list) *)
+  add_to_cfg (Eload (addr_reg, 0, val_reg, ld))
+
 and rtl_expr_val_type_addr e ctx ld val_reg type_reg addr_reg =
   let load_val_lb = val_type_of_addr addr_reg ld type_reg val_reg in
   rtl_expr_addr e ctx load_val_lb addr_reg
@@ -255,10 +288,16 @@ and rtl_expr_val e ctx ld val_reg =
   let load_val_lb = val_of_addr addr_reg ld val_reg in
   rtl_expr_addr e ctx load_val_lb addr_reg
 
+and rtl_expr_type e ctx ld type_reg =
+  let addr_reg = Register.fresh () in
+  let load_val_lb = type_of_addr addr_reg ld type_reg in
+  rtl_expr_addr e ctx load_val_lb addr_reg
+
 and my_len_macro_ r_addr ctx ld rd =
   let val_reg = Register.fresh () in
   let l_alloc = alloc_int val_reg rd ld in
   val_of_addr r_addr l_alloc val_reg
+
 
 and my_print_macro_ r_addr ctx ld rd =
   let r_ret_useless = Register.fresh () in
@@ -268,10 +307,6 @@ and my_print_macro_ r_addr ctx ld rd =
 
       let l_antislashn = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_antislashn], ld)) in
       let load_antislashn = add_to_cfg (Econst(Cint 10L, r_antislashn, l_antislashn)) in
-
-      let is_leq_branch reg i l_true l_next =
-        add_to_cfg (Emubranch (Ops.Mjlei (i), reg, l_true, l_next))
-      in
 
       (* NoneType *)
       let lbl_0 = 
@@ -344,15 +379,10 @@ and my_print_macro_ r_addr ctx ld rd =
       add_to_cfg (Econst(Cint 0L, r_counter, lbl_addr));
     in
 
-      let l_cmp4 = is_leq_branch r_type 4L lbl_4 ld in
-      let l_cmp3 = is_leq_branch r_type 3L lbl_3 l_cmp4 in
-      let l_cmp2 = is_leq_branch r_type 2L lbl_2 l_cmp3 in
-      let l_cmp1 = is_leq_branch r_type 1L lbl_1 l_cmp2 in
-      let l_cmp0 = is_leq_branch r_type 0L lbl_0 l_cmp1 in
-      (*let return_zero = add_to_cfg (Econst(Cint 0L, rd, l_cmp0)) in*)
-      let val_lb = add_to_cfg (Eload (r_addr, 8, r_val, l_cmp0)) in
-      let type_lb = add_to_cfg (Eload (r_addr, 0, r_type, val_lb)) in
-      type_lb
+    let l_cmp = compare_type_macro r_type lbl_0 lbl_1 lbl_2 lbl_3 lbl_4 ld in
+    let val_lb = add_to_cfg (Eload (r_addr, 8, r_val, l_cmp)) in
+    let type_lb = add_to_cfg (Eload (r_addr, 0, r_type, val_lb)) in
+    type_lb
 
 and my_print_macro e ctx ld rd =
     let r_addr = Register.fresh () in
