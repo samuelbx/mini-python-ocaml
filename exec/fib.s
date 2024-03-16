@@ -3,121 +3,209 @@
 __print__:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-264, %rsp
-	movq %rdi, -144(%rbp)
-	movq -144(%rbp), %r15
+	addq $-320, %rsp
+	movq %rdi, -208(%rbp)
+	movq -208(%rbp), %r15
 	movq 0(%r15), %r10
-	movq -144(%rbp), %r15
+	movq -208(%rbp), %r15
 	movq 8(%r15), %rsi
 	cmpq $0, %r10
-	jle L286
+	jle L331
 	cmpq $1, %r10
-	jle L290
+	jle L335
 	cmpq $2, %r10
-	jle L292
+	jle L337
 	cmpq $3, %r10
-	jle L308
+	jle L353
 	cmpq $4, %r10
-	jle L324
-L282:
-	movq -152(%rbp), %rax
+	jle L369
+L327:
+	movq -216(%rbp), %rax
 	movq %rbp, %rsp
 	popq %rbp
 	ret
-L324:
-	movq $0, -184(%rbp)
-L323:
-	movq -144(%rbp), %r15
+L369:
+	movq $0, -240(%rbp)
+L368:
+	movq -208(%rbp), %r15
 	movq 8(%r15), %r10
-	movq $1, -192(%rbp)
+	movq $1, -248(%rbp)
 	movq $2, %r8
-	subq -184(%rbp), %r10
+	subq -240(%rbp), %r10
 	testq %r10, %r10
-	jnz L318
-L284:
+	jnz L363
+L329:
 	movq $10, %rdi
 	call putchar
 	movq %rax, %r10
-	jmp L282
-L318:
-	movq -184(%rbp), %r10
+	jmp L327
+L363:
+	movq -240(%rbp), %r10
 	addq %r8, %r10
 	movq $8, %r8
 	imulq %r8, %r10
-	addq -144(%rbp), %r10
+	addq -208(%rbp), %r10
 	movq 0(%r10), %rdi
 	call __print__
 	movq %rax, %r10
-	movq -184(%rbp), %r15
-	addq -192(%rbp), %r15
-	movq %r15, -184(%rbp)
-	jmp L323
-L308:
-	movq $0, -168(%rbp)
-L307:
-	movq -144(%rbp), %r15
+	movq -240(%rbp), %r15
+	addq -248(%rbp), %r15
+	movq %r15, -240(%rbp)
+	jmp L368
+L353:
+	movq $0, -224(%rbp)
+L352:
+	movq -208(%rbp), %r15
 	movq 8(%r15), %r10
-	movq $1, -176(%rbp)
+	movq $1, -232(%rbp)
 	movq $2, %r8
-	subq -168(%rbp), %r10
+	subq -224(%rbp), %r10
 	testq %r10, %r10
-	jz L284
-	movq -168(%rbp), %r10
+	jz L329
+	movq -224(%rbp), %r10
 	addq %r8, %r10
 	movq $8, %r8
 	imulq %r8, %r10
-	addq -144(%rbp), %r10
+	addq -208(%rbp), %r10
 	movq 0(%r10), %rdi
 	call putchar
 	movq %rax, %r10
-	movq -168(%rbp), %r15
-	addq -176(%rbp), %r15
-	movq %r15, -168(%rbp)
-	jmp L307
-L292:
+	movq -224(%rbp), %r15
+	addq -232(%rbp), %r15
+	movq %r15, -224(%rbp)
+	jmp L352
+L337:
 	movq $.LC1, %rdi
 	movq $0, %rax
 	call printf
 	movq %rax, %r10
-	jmp L284
-L290:
+	jmp L329
+L335:
 	cmpq $0, %rsi
-	jle L288
+	jle L333
 	movq $.LC2, %rdi
-L287:
+L332:
 	movq $0, %rax
 	call printf
 	movq %rax, %r10
-	jmp L284
-L288:
+	jmp L329
+L333:
 	movq $.LC3, %rdi
-	jmp L287
-L286:
+	jmp L332
+L331:
 	movq $.LC4, %rdi
 	movq $0, %rax
 	call printf
 	movq %rax, %r10
-	jmp L284
+	jmp L329
 __len__:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-264, %rsp
+	addq $-320, %rsp
 	movq %rdi, %r10
 	movq 8(%r10), %r15
-	movq %r15, -136(%rbp)
+	movq %r15, -200(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq $2, %r10
 	movq %r10, 0(%rax)
-	movq -136(%rbp), %r15
+	movq -200(%rbp), %r15
 	movq %r15, 8(%rax)
 	movq %rbp, %rsp
 	popq %rbp
 	ret
+__add__:
+	pushq %rbp
+	movq %rsp, %rbp
+	addq $-320, %rsp
+	movq %rsi, -152(%rbp)
+	movq %rdi, -144(%rbp)
+	movq -144(%rbp), %r15
+	movq 0(%r15), %r10
+	movq -144(%rbp), %r15
+	movq 8(%r15), %r11
+	movq %r11, -168(%rbp)
+	movq -152(%rbp), %r15
+	movq 8(%r15), %r11
+	movq %r11, -176(%rbp)
+	cmpq $0, %r10
+	jle L266
+	cmpq $1, %r10
+	jle L266
+	cmpq $2, %r10
+	jle L273
+	cmpq $3, %r10
+	jle L310
+	cmpq $4, %r10
+	jle L310
+L266:
+	movq -160(%rbp), %rax
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+L310:
+	movq -176(%rbp), %r15
+	addq -168(%rbp), %r15
+	movq %r15, -176(%rbp)
+	movq -176(%rbp), %rdi
+	call malloc
+	movq %rax, %r10
+	movq $0, %r8
+	addq $2, -144(%rbp)
+	addq $2, %r10
+L305:
+	cmpq %r8, -168(%rbp)
+	jle L304
+	movq $0, %r8
+	addq $2, -152(%rbp)
+	addq $2, %r10
+L287:
+	cmpq %r8, -176(%rbp)
+	jl L266
+L286:
+	movq $8, %rax
+	movq %r8, %r9
+	imulq %rax, %r9
+	addq -152(%rbp), %r9
+	movq 0(%r9), %r9
+	movq $8, %rcx
+	movq %r8, %rax
+	imulq %rcx, %rax
+	addq %r10, %rax
+	movq %r9, 0(%rax)
+	incq %r8
+	jmp L287
+L304:
+	movq $8, %rax
+	movq %r8, %r9
+	imulq %rax, %r9
+	addq -144(%rbp), %r9
+	movq 0(%r9), %r9
+	movq $8, %rcx
+	movq %r8, %rax
+	imulq %rcx, %rax
+	addq %r10, %rax
+	movq %r9, 0(%rax)
+	incq %r8
+	jmp L305
+	jmp L310
+L273:
+	addq %r8, -184(%rbp)
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r8
+	movq $2, %r10
+	movq %r10, 0(%r8)
+	movq -184(%rbp), %r15
+	movq %r15, 8(%r8)
+	movq %r8, -160(%rbp)
+	jmp L266
+	jmp L266
+	jmp L266
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-264, %rsp
+	addq $-320, %rsp
 	movq $360, %rdi
 	call malloc
 	movq %rax, %rdi
@@ -223,7 +311,76 @@ L102:
 	movq %r10, 0(%r11)
 	movq -16(%rbp), %r11
 	movq %r8, 8(%r11)
-	movq $0, -264(%rbp)
+	movq $0, -320(%rbp)
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r10
+	movq $2, %r8
+	movq %r8, 0(%r10)
+	movq -320(%rbp), %r15
+	movq %r15, 8(%r10)
+	movq -16(%rbp), %r11
+	movq %r10, 16(%r11)
+	movq $1, -312(%rbp)
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r10
+	movq $2, %r8
+	movq %r8, 0(%r10)
+	movq -312(%rbp), %r15
+	movq %r15, 8(%r10)
+	movq -16(%rbp), %r11
+	movq %r10, 24(%r11)
+	movq $11, -304(%rbp)
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r10
+	movq $2, %r8
+	movq %r8, 0(%r10)
+	movq -304(%rbp), %r15
+	movq %r15, 8(%r10)
+	movq -16(%rbp), %r11
+	movq %r10, 32(%r11)
+	movq $42, -296(%rbp)
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r10
+	movq $2, %r8
+	movq %r8, 0(%r10)
+	movq -296(%rbp), %r15
+	movq %r15, 8(%r10)
+	movq -16(%rbp), %r11
+	movq %r10, 40(%r11)
+	movq $48, %rdi
+	call malloc
+	movq %rax, -192(%rbp)
+	movq $4, %r10
+	movq $4, %r8
+	movq -192(%rbp), %r11
+	movq %r10, 0(%r11)
+	movq -192(%rbp), %r11
+	movq %r8, 8(%r11)
+	movq $0, -288(%rbp)
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r10
+	movq $2, %r8
+	movq %r8, 0(%r10)
+	movq -288(%rbp), %r15
+	movq %r15, 8(%r10)
+	movq -192(%rbp), %r11
+	movq %r10, 16(%r11)
+	movq $1, -272(%rbp)
+	movq $16, %rdi
+	call malloc
+	movq %rax, %r10
+	movq $2, %r8
+	movq %r8, 0(%r10)
+	movq -272(%rbp), %r15
+	movq %r15, 8(%r10)
+	movq -192(%rbp), %r11
+	movq %r10, 24(%r11)
+	movq $11, -264(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
@@ -231,9 +388,9 @@ L102:
 	movq %r8, 0(%r10)
 	movq -264(%rbp), %r15
 	movq %r15, 8(%r10)
-	movq -16(%rbp), %r11
-	movq %r10, 16(%r11)
-	movq $1, -256(%rbp)
+	movq -192(%rbp), %r11
+	movq %r10, 32(%r11)
+	movq $42, -256(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
@@ -241,91 +398,22 @@ L102:
 	movq %r8, 0(%r10)
 	movq -256(%rbp), %r15
 	movq %r15, 8(%r10)
-	movq -16(%rbp), %r11
-	movq %r10, 24(%r11)
-	movq $11, -248(%rbp)
-	movq $16, %rdi
-	call malloc
-	movq %rax, %r10
-	movq $2, %r8
-	movq %r8, 0(%r10)
-	movq -248(%rbp), %r15
-	movq %r15, 8(%r10)
-	movq -16(%rbp), %r11
-	movq %r10, 32(%r11)
-	movq $42, -240(%rbp)
-	movq $16, %rdi
-	call malloc
-	movq %rax, %r10
-	movq $2, %r8
-	movq %r8, 0(%r10)
-	movq -240(%rbp), %r15
-	movq %r15, 8(%r10)
-	movq -16(%rbp), %r11
+	movq -192(%rbp), %r11
 	movq %r10, 40(%r11)
-	movq $48, %rdi
-	call malloc
-	movq %rax, -160(%rbp)
-	movq $4, %r10
-	movq $4, %r8
-	movq -160(%rbp), %r11
-	movq %r10, 0(%r11)
-	movq -160(%rbp), %r11
-	movq %r8, 8(%r11)
-	movq $0, -232(%rbp)
-	movq $16, %rdi
-	call malloc
-	movq %rax, %r10
-	movq $2, %r8
-	movq %r8, 0(%r10)
-	movq -232(%rbp), %r15
-	movq %r15, 8(%r10)
-	movq -160(%rbp), %r11
-	movq %r10, 16(%r11)
-	movq $1, -216(%rbp)
-	movq $16, %rdi
-	call malloc
-	movq %rax, %r10
-	movq $2, %r8
-	movq %r8, 0(%r10)
-	movq -216(%rbp), %r15
-	movq %r15, 8(%r10)
-	movq -160(%rbp), %r11
-	movq %r10, 24(%r11)
-	movq $11, -208(%rbp)
-	movq $16, %rdi
-	call malloc
-	movq %rax, %r10
-	movq $2, %r8
-	movq %r8, 0(%r10)
-	movq -208(%rbp), %r15
-	movq %r15, 8(%r10)
-	movq -160(%rbp), %r11
-	movq %r10, 32(%r11)
-	movq $42, -200(%rbp)
-	movq $16, %rdi
-	call malloc
-	movq %rax, %r10
-	movq $2, %r8
-	movq %r8, 0(%r10)
-	movq -200(%rbp), %r15
-	movq %r15, 8(%r10)
-	movq -160(%rbp), %r11
-	movq %r10, 40(%r11)
-	movq -160(%rbp), %r15
+	movq -192(%rbp), %r15
 	movq 8(%r15), %r8
 	movq -16(%rbp), %r10
 	movq -8(%rbp), %r10
 	addq $2, %r10
 	cmpq %r8, -8(%rbp)
 	jl L21
-	movq $0, -224(%rbp)
+	movq $0, -280(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
 	movq $2, %r8
 	movq %r8, 0(%r10)
-	movq -224(%rbp), %r15
+	movq -280(%rbp), %r15
 	movq %r15, 8(%r10)
 	movq 8(%r10), %rax
 	movq %rbp, %rsp
@@ -344,65 +432,56 @@ L21:
 def_fibaux:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-264, %rsp
+	addq $-320, %rsp
 	movq %rdx, -40(%rbp)
 	movq %rsi, -32(%rbp)
 	movq %rdi, -24(%rbp)
 	movq -40(%rbp), %r10
 	movq 8(%r10), %r15
-	movq %r15, -88(%rbp)
-	movq $0, -96(%rbp)
+	movq %r15, -96(%rbp)
+	movq $0, -104(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
 	movq $2, %r8
 	movq %r8, 0(%r10)
-	movq -96(%rbp), %r15
+	movq -104(%rbp), %r15
 	movq %r15, 8(%r10)
 	movq 8(%r10), %r10
-	cmpq %r10, -88(%rbp)
+	cmpq %r10, -96(%rbp)
 	sete %r11b
 	movzbq %r11b, %r11
-	movq %r11, -88(%rbp)
+	movq %r11, -96(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
 	movq $1, %r8
 	movq %r8, 0(%r10)
-	movq -88(%rbp), %r15
+	movq -96(%rbp), %r15
 	movq %r15, 8(%r10)
 	movq 8(%r10), %r10
 	testq %r10, %r10
 	jnz L202
 	movq -32(%rbp), %r15
 	movq %r15, -56(%rbp)
-	movq -24(%rbp), %r10
-	movq 8(%r10), %r15
-	movq %r15, -80(%rbp)
-	movq -32(%rbp), %r10
-	movq 8(%r10), %r10
-	addq %r10, -80(%rbp)
-	movq $16, %rdi
-	call malloc
-	movq %rax, %r8
-	movq $2, %r10
-	movq %r10, 0(%r8)
-	movq -80(%rbp), %r15
-	movq %r15, 8(%r8)
-	movq %r8, -48(%rbp)
+	movq -24(%rbp), %rsi
+	movq -88(%rbp), %rdi
+	call __add__
+	movq %rax, -48(%rbp)
 	movq -40(%rbp), %r10
-	movq 8(%r10), %r15
-	movq %r15, -64(%rbp)
-	movq $1, -72(%rbp)
+	movq 8(%r10), %r10
+	movq $1, -80(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
 	movq $2, %r8
 	movq %r8, 0(%r10)
-	movq -72(%rbp), %r15
+	movq -80(%rbp), %r15
 	movq %r15, 8(%r10)
 	movq 8(%r10), %r10
-	subq %r10, -64(%rbp)
+	movq -64(%rbp), %r15
+	subq -72(%rbp), %r15
+	movq %r15, -64(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %rdx
@@ -426,27 +505,27 @@ L202:
 def_fib:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-264, %rsp
-	movq %rdi, -104(%rbp)
-	movq $0, -128(%rbp)
+	addq $-320, %rsp
+	movq %rdi, -112(%rbp)
+	movq $0, -136(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r8
 	movq $2, %r10
 	movq %r10, 0(%r8)
-	movq -128(%rbp), %r15
+	movq -136(%rbp), %r15
 	movq %r15, 8(%r8)
-	movq %r8, -112(%rbp)
-	movq $1, -120(%rbp)
+	movq %r8, -120(%rbp)
+	movq $1, -128(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %rsi
 	movq $2, %r10
 	movq %r10, 0(%rsi)
-	movq -120(%rbp), %r15
+	movq -128(%rbp), %r15
 	movq %r15, 8(%rsi)
-	movq -104(%rbp), %rdx
-	movq -112(%rbp), %rdi
+	movq -112(%rbp), %rdx
+	movq -120(%rbp), %rdi
 	call def_fibaux
 	movq %rax, %r10
 	movq 8(%r10), %rax
