@@ -3,7 +3,7 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-48, %rsp
+	addq $-40, %rsp
 	movq $40, %rdi
 	call malloc
 	movq %rax, -8(%rbp)

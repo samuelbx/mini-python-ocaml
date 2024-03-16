@@ -3,43 +3,39 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-48, %rsp
-	movq $40, %rdi
+	addq $-40, %rsp
+	movq $112, %rdi
 	call malloc
-	movq %rax, -8(%rbp)
-	movq $4, %r10
+	movq %rax, %r10
 	movq $3, %r8
-	movq -8(%rbp), %r11
-	movq %r10, 0(%r11)
-	movq -8(%rbp), %r11
-	movq %r8, 8(%r11)
-	movq $16, %rdi
-	call malloc
-	movq %rax, %r10
-	movq $2, %r9
-	movq $1, %r8
-	movq %r9, 0(%r10)
-	movq %r8, 8(%r10)
-	movq -8(%rbp), %r11
-	movq %r10, 16(%r11)
-	movq $16, %rdi
-	call malloc
-	movq %rax, %r10
-	movq $2, %r9
-	movq $2, %r8
-	movq %r9, 0(%r10)
-	movq %r8, 8(%r10)
-	movq -8(%rbp), %r11
-	movq %r10, 24(%r11)
-	movq $16, %rdi
-	call malloc
-	movq %rax, %r10
-	movq $2, %r9
-	movq $3, %r8
-	movq %r9, 0(%r10)
-	movq %r8, 8(%r10)
-	movq -8(%rbp), %r11
-	movq %r10, 32(%r11)
+	movq $12, %r9
+	movq %r8, 0(%r10)
+	movq %r9, 8(%r10)
+	movq $104, %r8
+	movq %r8, 16(%r10)
+	movq $101, %r8
+	movq %r8, 24(%r10)
+	movq $108, %r8
+	movq %r8, 32(%r10)
+	movq $108, %r8
+	movq %r8, 40(%r10)
+	movq $111, %r8
+	movq %r8, 48(%r10)
+	movq $44, %r8
+	movq %r8, 56(%r10)
+	movq $32, %r8
+	movq %r8, 64(%r10)
+	movq $119, %r8
+	movq %r8, 72(%r10)
+	movq $111, %r8
+	movq %r8, 80(%r10)
+	movq $114, %r8
+	movq %r8, 88(%r10)
+	movq $108, %r8
+	movq %r8, 96(%r10)
+	movq $100, %r8
+	movq %r8, 104(%r10)
+	movq %r10, -8(%rbp)
 	movq -8(%rbp), %r15
 	movq 0(%r15), %r10
 	movq -8(%rbp), %r15
