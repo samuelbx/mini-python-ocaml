@@ -17,7 +17,7 @@ let emit_only_l l = code := Label l :: !code
 let labels = Hashtbl.create 17
 let need_label l = if not (Hashtbl.mem labels l) then Hashtbl.add labels l ()
 
-let registerl (r : Register.t) = match (r :> string) with
+let registerq (r : Register.t) = match (r :> string) with
   | "%rax" -> X86_64.rax
   | "%rbx" -> X86_64.rbx
   | "%rcx" -> X86_64.rcx
@@ -55,8 +55,8 @@ let registerb (r : Register.t) = match (r :> string) with
   | "%r15" -> X86_64.r15b
   | _ -> raise (Error ("cannot translate register"))
 
-let operandl = function
-  | Ltltree.Reg (r) -> reg (registerl r)
+let operandq = function
+  | Ltltree.Reg (r) -> reg (registerq r)
   | Ltltree.Spilled (i) -> ind ~ofs:i X86_64.rbp
 
 let operandb = function
@@ -67,25 +67,25 @@ let treat_unop unop op l=
   match unop with 
   | Maddi (i64) ->  if Int64.to_int i64 == 1 
                     then begin
-                      emit l (incl (operandl op))
+                      emit l (incq (operandq op))
                     end
                     else begin
                       if Int64.to_int i64 == -1 then begin
-                        emit l (decl (operandl op))  
+                        emit l (decq (operandq op))  
                       end
                       else begin
-                      emit l (addl (imm64 i64) (operandl op))
+                      emit l (addq (imm64 i64) (operandq op))
                       end
                     end
-  | Msetei (i64) -> emit l (cmpl (imm64 i64) (operandl op)) ; emit_wl (sete (operandb op))
-  | Msetnei (i64) -> emit l (cmpl (imm64 i64) (operandl op)) ; emit_wl (setne (operandb op))
+  | Msetei (i64) -> emit l (cmpq (imm64 i64) (operandq op)) ; emit_wl (sete (operandb op))
+  | Msetnei (i64) -> emit l (cmpq (imm64 i64) (operandq op)) ; emit_wl (setne (operandb op))
 
 
 let convert_binop_2 = function
-| Mmov -> movl
-| Madd -> addl
-| Msub -> subl
-| Mmul -> imull
+| Mmov -> movq
+| Madd -> addq
+| Msub -> subq
+| Mmul -> imulq 
 | _ -> raise (Error "convert binop 2 pas content")
 
 let convert_binop_1 = function
@@ -101,17 +101,17 @@ let treat_binop binop op1 op2 l =
   match binop with  
   | Mmov 
   | Madd 
-  | Msub
-  | Mmul -> emit l (convert_binop_2 binop (operandl op1) (operandl op2))
-  | Mdiv -> emit l cqto; emit_wl (idivq (operandl op1)); 
-  | _ -> begin match op2 with | Ltltree.Reg(reg2) -> emit l (cmpl (operandl op1) (operandl op2)); 
+  | Msub 
+  | Mmul -> emit l (convert_binop_2 binop (operandq op1) (operandq op2))
+  | Mdiv -> emit l cqto; emit_wl (idivq (operandq op1)); 
+  | _ -> begin match op2 with | Ltltree.Reg(reg2) -> emit l (cmpq (operandq op1) (operandq op2)); 
                                                      emit_wl (convert_binop_1 binop (reg r11b)); 
-                                                     emit_wl (movzbq (reg r11b) (registerl reg2))
+                                                     emit_wl (movzbq (reg r11b) (registerq reg2))
                               | Ltltree.Spilled (i) -> let pile = ind ~ofs:i X86_64.rbp in 
-                                                       emit l (cmpl (operandl op1) (operandl op2)); 
+                                                       emit l (cmpq (operandq op1) (operandq op2)); 
                                                        emit_wl (convert_binop_1 binop (reg r11b));
-                                                       emit_wl (movzbl (reg r11b) (registerl (Register.r11)));
-                                                      emit_wl (movl (operandl (Ltltree.Reg(Register.r11))) pile)
+                                                       emit_wl (movzbq (reg r11b) (registerq (Register.r11)));
+                                                      emit_wl (movq (operandq (Ltltree.Reg(Register.r11))) pile)
     end
 
 let bin_jmp_match = function
@@ -137,9 +137,9 @@ let un_jmp_match = function
 let rec treat_mubranch mubranch (op : Ltltree.operand) (lb1 : Label.t) (lb2 : Label.t) g l =
   (match mubranch with 
   | Mjz 
-  | Mjnz -> emit l (testl (operandl op) (operandl op))
+  | Mjnz -> emit l (testq (operandq op) (operandq op))
   | Mjlei (i64) 
-  | Mjgi  (i64) -> emit l (cmpl (imm64 i64) (operandl op)));
+  | Mjgi  (i64) -> emit l (cmpq (imm64 i64) (operandq op)));
   
   if not (Hashtbl.mem visited lb2) then begin
     need_label lb1;
@@ -162,7 +162,7 @@ let rec treat_mubranch mubranch (op : Ltltree.operand) (lb1 : Label.t) (lb2 : La
   end
 
 and treat_mbbranch mbbranch (op1 : Ltltree.operand) (op2 : Ltltree.operand) (lb1 : Label.t)  (lb2 : Label.t) g l = 
-  emit l (cmpl (operandl op1) (operandl op2));
+  emit l (cmpq (operandq op1) (operandq op2));
   
   if not (Hashtbl.mem visited lb2) then begin
     need_label lb1;
@@ -203,23 +203,23 @@ and load_string g l str op lb =
     else
       Hashtbl.find data_strings str
     in
-  emit l (movl (reg ("$" ^ str_lbl)) (operandl op)); lin g lb
+  emit l (movq (reg ("$" ^ str_lbl)) (operandq op)); lin g lb
 
 and instru g l = function
   | Ltltree.Econst (Cint n, op, lb) ->
-      emit l (movl (imm64 n) (operandl op)); lin g lb
+      emit l (movq (imm64 n) (operandq op)); lin g lb
   | Ltltree.Econst (Cstring s, op, lb) ->
       load_string g l s op lb;
   | Ltltree.Egoto (lb) -> emit_only_l l; lin g lb
   | Ltltree.Eload (op1 ,n , op2, lb) -> 
-      emit l (movl (X86_64.ind ~ofs:n (registerl op1)) (reg (registerl op2))); lin g lb
+      emit l (movq (X86_64.ind ~ofs:n (registerq op1)) (reg (registerq op2))); lin g lb
   | Ltltree.Estore (op1, op2, n, lb) ->
-      emit l (movl (reg (registerl op1)) (X86_64.ind ~ofs:n (registerl op2))); lin g lb
+      emit l (movq (reg (registerq op1)) (X86_64.ind ~ofs:n (registerq op2))); lin g lb
   | Ltltree.Ereturn -> emit l ret
   | Ltltree.Emunop (unop, op, lb) -> treat_unop unop op l; lin g lb
   | Ltltree.Embinop (binop, op1, op2, lb) -> treat_binop binop op1 op2 l; lin g lb 
-  | Ltltree.Epush (op, lb) -> emit l (pushq (operandl(op))); lin g lb
-  | Ltltree.Epop (op, lb) -> emit l (popq (registerl(op))); lin g lb
+  | Ltltree.Epush (op, lb) -> emit l (pushq (operandq(op))); lin g lb
+  | Ltltree.Epop (op, lb) -> emit l (popq (registerq(op))); lin g lb
   | Ltltree.Emubranch (mubranch, op, lb1, lb2) -> treat_mubranch mubranch op lb1 lb2 g l 
   | Ltltree.Ecall (ident , lb) -> emit l (call ident); lin g lb (* TODO: implement printf, zero %eax *)
   | Ltltree.Embbranch (mbbranch, op1, op2, lb1, lb2) -> treat_mbbranch mbbranch op1 op2 lb1 lb2 g l 
