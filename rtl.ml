@@ -158,7 +158,8 @@ and rtl_expr_addr e ctx ld rd =
     let l_move = add_to_cfg (Embinop (Ops.Mmov, addr_reg, rd, ld)) in
     let store_lb_2 = add_to_cfg (Estore (val_reg, addr_reg, 8, ld)) in
     let store_lb = add_to_cfg (Estore (type_reg, addr_reg, 0, store_lb_2)) in
-    let val_lb = add_to_cfg (Econst (Cbool b, val_reg, store_lb)) in
+    let bool_of_i = if b then Cint 1L else Cint 0L in
+    let val_lb = add_to_cfg (Econst (bool_of_i, val_reg, store_lb)) in
     let type_lb = add_to_cfg (Econst (Cint 1L, type_reg, val_lb)) in
     let alloc_lb = my_malloc 2 addr_reg type_lb in
     alloc_lb
