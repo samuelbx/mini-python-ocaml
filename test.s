@@ -50,6 +50,8 @@ main:
 	movq %r8, 8(%r10)
 	movq 8(%r10), %r15
 	movq %r15, -8(%rbp)
+	movq $2, %r10
+	addq %r10, -8(%rbp)
 	movq $24, %rdi
 	call malloc
 	movq %rax, %r10

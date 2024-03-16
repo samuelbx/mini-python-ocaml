@@ -205,11 +205,12 @@ and rtl_expr_addr e ctx ld rd =
   | TEget (e1, e2) ->
       let r_addr_e1 = Register.fresh () in
       let r_val_e2 = Register.fresh () in
+      let r_two = Register.fresh () in
       let l_load = my_eloadr rd r_addr_e1 8L r_val_e2 ld in
       let l_addr_e1 = rtl_expr_addr e2 ctx l_load r_addr_e1 in
-      rtl_expr_val e2 ctx l_addr_e1 r_val_e2
-  | TEget (e1, e2) -> 
-     raise (Error "(rtl) not implemented")
+      let l_add = add_to_cfg (Embinop (Ops.Madd, r_two, r_val_e2, l_addr_e1)) in
+      let l_load_two = add_to_cfg (Econst (Cint 2L, r_two, l_add)) in
+      rtl_expr_val e2 ctx l_load_two r_val_e2
 
 and val_type_of_addr addr_reg ld type_reg val_reg =
   (* fills type_reg and val_reg with type (between 0 and 4) and value (or len for string/list) *)
