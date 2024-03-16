@@ -175,25 +175,9 @@ and rtl_expr_addr e ctx ld rd =
     alloc_lb
   | TErange e -> raise (Error "(rtl) not implemented")
   | TEget (e1, TEvar e2) ->
-      (* TODO: debug, I don't understand most of this *)
-        let _ =
-            if Hashtbl.mem ctx e2.v_name then Hashtbl.find ctx e2.v_name
-            else raise (Error "Variable not found in context")
-        in
-        let index_reg = Register.fresh () in
-        let list_reg = Register.fresh () in
-        let get_lb = add_to_cfg (EloadR (list_reg, 0L, index_reg, 8L, rd, ld)) in
-        let list_lb = rtl_expr_val e1 ctx store_lb get_lb in
-        let index_lb = rtl_expr_val e2 ctx list_lb index_reg in
-        index_lb
+      raise (Error "(rtl) not implemented")
   | TEget (e1, e2) -> 
-        let index = Int64.to_int i * 8 in
-        let list_reg = Register.fresh () in
-        let value_reg = Register.fresh () in
-        let get_lb = add_to_cfg (Eload (list_reg, index, rd, ld)) in
-        let list_lb = rtl_expr_val e1 ctx get_lb list_reg in
-        let index = rtl_expr_val e3 ctx list_lb value_reg in
-        index_lb
+     raise (Error "(rtl) not implemented")
 
 and val_type_of_addr addr_reg ld type_reg val_reg =
   (* fills type_reg and val_reg with type (between 0 and 4) and value (or len for string/list) *)
@@ -264,7 +248,7 @@ and my_print_macro e ctx ld rd =
         let lbl_toreplace = Label.fresh () in
         let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, lbl_toreplace)) in
         let l_putchar = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_char], l_incr_counter)) in
-        let load_char = add_to_cfg (EloadR(r_char, 0L, r_addr, 8L, r_counter, l_putchar)) in (* 0+ r_addr+8*r_counter *)
+        let load_char = add_to_cfg (EloadR(r_char, 0, r_addr, 8, r_counter, l_putchar)) in (* 0+ r_addr+8*r_counter *)
         let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, load_char, l_antislashn)) in
         let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_cmp)) in
         add_to_cfg (Econst(Cint 0L, r_counter, l_loadone))
@@ -302,15 +286,7 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
   | TSif (expr, if_stmt, else_stmt) -> rtl_if expr if_stmt else_stmt ctx ld r_ret l_exit
   | TSblock block -> rtl_block block ctx ld r_ret l_exit
   | TSfor (v, expr, stmt) ->
-    let loop_start = Label.fresh () in
-    let loop_exit = Label.fresh () in
-    
-    let init_reg = Register.fresh () in
-    let init_lb = rtl_expr_val expr ctx ld init_reg in
-    
-    let test_reg = Register.fresh () in
-    let test_lb = add_to_cfg (Emubranch (Ops.Mjnz, test_reg, loop_start, loop_exit)) in
-    
+    raise (Error "(rtl) not implemented")
     
   | TSset (e1, e2, e3) -> 
           (match e2 with 
@@ -332,7 +308,7 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
         let offset = Int64.to_int i * 8 in
         let list_reg = Register.fresh () in
         let value_reg = Register.fresh () in
-        let store_lb = add_to_cfg (Estore (value_reg, rd, offset, ld)) in
+        let store_lb = add_to_cfg (Estore (value_reg, r_ret, offset, ld)) in
         let list_lb = rtl_expr_val e1 ctx store_lb list_reg in
         let value_lb = rtl_expr_val e3 ctx list_lb value_reg in
         store_lb

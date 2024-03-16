@@ -7,7 +7,7 @@ type label = Label.t
 
 type rtlinstr =
   | Econst of Ast.constant * register * label
-  | EloadR of register * int * register * label
+  | EloadR of register * int * register * int * register * label
   | Eload of register * int * register * label
   | Estore of register * register * int * label
   | EstoreR of register * int * register * register * int * label
