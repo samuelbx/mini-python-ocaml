@@ -486,37 +486,42 @@ and my_print_macro e ctx ld rd =
     rtl_expr_addr e ctx l_print r_addr
 
 and rtl_stmt stmt ctx ld r_ret l_exit =
-  match stmt with
-  | TSreturn expr ->
-      let result_reg = Register.fresh () in
-      let ret_lb = add_to_cfg (Embinop (Ops.Mmov, result_reg, r_ret, l_exit)) in
-      rtl_expr_addr expr ctx ret_lb result_reg
-  | TSif (expr, if_stmt, else_stmt) -> rtl_if expr if_stmt else_stmt ctx ld r_ret l_exit
-  | TSblock block -> rtl_block block ctx ld r_ret l_exit
-  | TSfor (v, expr, stmt) ->
-        rtl_for  expr v stmt ctx ld r_ret l_exit
-  | TSset (e1, e2, e3) -> 
-        let index_reg = Register.fresh () in
-        let list_reg = Register.fresh () in
-        let value_reg = Register.fresh () in
-        let store_lb = my_estorer value_reg list_reg 8L index_reg ld in
-        let shifted_idx = add_to_cfg (Emunop (Ops.Maddi 2L, index_reg, store_lb)) in
-        let list_lb = rtl_expr_addr e1 ctx shifted_idx list_reg in
-        let index_lb = rtl_expr_val e2 ctx list_lb index_reg in
-        let value_lb = rtl_expr_addr e3 ctx index_lb value_reg in
-        value_lb
+  let main_stmt =
+    match stmt with
+    | TSreturn expr ->
+        let result_reg = Register.fresh () in
+        let ret_lb = add_to_cfg (Embinop (Ops.Mmov, result_reg, r_ret, l_exit)) in
+        rtl_expr_addr expr ctx ret_lb result_reg
+    | TSif (expr, if_stmt, else_stmt) -> rtl_if expr if_stmt else_stmt ctx ld r_ret l_exit
+    | TSblock block -> rtl_block block ctx ld r_ret l_exit
+    | TSfor (v, expr, stmt) ->
+          rtl_for  expr v stmt ctx ld r_ret l_exit
+    | TSset (e1, e2, e3) -> 
+          let index_reg = Register.fresh () in
+          let list_reg = Register.fresh () in
+          let value_reg = Register.fresh () in
+          let store_lb = my_estorer value_reg list_reg 8L index_reg ld in
+          let shifted_idx = add_to_cfg (Emunop (Ops.Maddi 2L, index_reg, store_lb)) in
+          let list_lb = rtl_expr_addr e1 ctx shifted_idx list_reg in
+          let index_lb = rtl_expr_val e2 ctx list_lb index_reg in
+          let value_lb = rtl_expr_addr e3 ctx index_lb value_reg in
+          value_lb
 
-  | TSeval e ->
-      let result_reg = Register.fresh () in
-      rtl_expr_addr e ctx ld result_reg
-  | TSprint e ->
-    let r_addr = Register.fresh () in
-    let call_l = add_to_cfg (Ecall (r_ret, "__print__", [r_addr], ld)) in
-    rtl_expr_addr e ctx call_l r_addr
-  | TSassign (v, e) ->
-      let calc_reg = Register.fresh () in
-      let assign_lb = add_to_cfg (Embinop (Ops.Mmov, calc_reg, var_reg ctx v, ld)) in
-      rtl_expr_addr e ctx assign_lb calc_reg
+    | TSeval e ->
+        let result_reg = Register.fresh () in
+        rtl_expr_addr e ctx ld result_reg
+    | TSprint e ->
+      let r_addr = Register.fresh () in
+      let call_l = add_to_cfg (Ecall (r_ret, "__print__", [r_addr], ld)) in
+      rtl_expr_addr e ctx call_l r_addr
+    | TSassign (v, e) ->
+        let calc_reg = Register.fresh () in
+        let assign_lb = add_to_cfg (Embinop (Ops.Mmov, calc_reg, var_reg ctx v, ld)) in
+        rtl_expr_addr e ctx assign_lb calc_reg
+    in
+    let zero_reg = Register.fresh () in
+    let l_ret_zero = add_to_cfg (Embinop (Ops.Mmov, zero_reg, r_ret, main_stmt)) in
+    add_to_cfg (Econst (Cint 0L, zero_reg, l_ret_zero))
 
 and rtl_stmt_list stmtlist ctx ld (result : Register.t) l_exit =
   match stmtlist with

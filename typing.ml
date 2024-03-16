@@ -149,4 +149,4 @@ let file ?debug:(b = false) (p : Ast.file) : tfile =
   let def_list, main_stmt = p in
   let tmain_def = { fn_name = "main"; fn_params = [] } in
   let global = Hashtbl.create 16 in
-  (tmain_def, TSblock([type_stmt global main_stmt; TSreturn(TEcst(Cint 0L))])) :: type_defs global def_list
+  (tmain_def, type_stmt global main_stmt) :: type_defs global def_list
