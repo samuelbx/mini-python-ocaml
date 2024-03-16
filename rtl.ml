@@ -272,7 +272,7 @@ and my_print_macro e ctx ld rd =
         let l_placeholder = Label.fresh () in
 
         (* goto cmp < increment counter < putchar < load char *)
-        let l_incr_counter = Label.fresh () in
+        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, load_antislashn)) in
         let l_putchar = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_char], l_incr_counter)) in
         let load_char = my_eloadr r_char r_addr 8L r_idx l_putchar in
         let l_set_idx_2 = add_to_cfg (Embinop (Ops.Madd, r_two, r_idx, load_char)) in
@@ -281,7 +281,6 @@ and my_print_macro e ctx ld rd =
         let l_loadtwo = add_to_cfg (Econst (Cint 2L, r_two, l_cmp)) in
         let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_loadtwo)) in
         let lbl_addr = add_to_cfg (Eload (r_addr, 8, r_val_2, l_loadone)) in
-        graph := Label.M.add l_incr_counter (Embinop (Ops.Madd, r_one, r_counter, lbl_addr)) !graph;
         add_to_cfg (Econst(Cint 0L, r_counter, lbl_addr));
       in
 
