@@ -77,9 +77,9 @@ let rec type_expr ctx = function
                   | Cint n ->
                     let rec gen_list i =
                       match i with
-                      | 0L -> []
+                      | -1L -> []
                       | _ -> gen_list (Int64.sub i 1L) @ [TEcst(Cint i)] in
-                    TElist(gen_list n)
+                    TElist(gen_list (Int64.sub n 1L))
                   | _ -> error ~loc:fn2.loc "(typing) range takes 'int' argument")
               | [ e ] when List.length args2 = 1 -> TErange (type_expr ctx e)
               | _ -> error ~loc:fn2.loc "(typing) range expected exactly 1 argument(s), got %i" (List.length args2))

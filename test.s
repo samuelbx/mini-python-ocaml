@@ -103,16 +103,16 @@ main:
 	movq %rsp, %rbp
 	addq $-72, %rsp
 	movq $0, -56(%rbp)
-L263:
-	movq $104, %rdi
+L247:
+	movq $96, %rdi
 	call malloc
 	movq %rax, -64(%rbp)
-	movq $4, %r10
-	movq $11, %r8
+	movq $4, %r8
+	movq $10, %r10
 	movq -64(%rbp), %r11
-	movq %r10, 0(%r11)
+	movq %r8, 0(%r11)
 	movq -64(%rbp), %r11
-	movq %r8, 8(%r11)
+	movq %r10, 8(%r11)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
@@ -203,33 +203,24 @@ L263:
 	movq %r8, 8(%r10)
 	movq -64(%rbp), %r11
 	movq %r10, 88(%r11)
-	movq $16, %rdi
-	call malloc
-	movq %rax, %r10
-	movq $2, %r9
-	movq $10, %r8
-	movq %r9, 0(%r10)
-	movq %r8, 8(%r10)
-	movq -64(%rbp), %r11
-	movq %r10, 96(%r11)
-	movq $104, %rdi
+	movq $96, %rdi
 	call malloc
 	movq %rax, -72(%rbp)
 	movq $4, %r10
-	movq $11, %r8
+	movq $10, %r8
 	movq -72(%rbp), %r11
 	movq %r10, 0(%r11)
 	movq -72(%rbp), %r11
 	movq %r8, 8(%r11)
 	movq $16, %rdi
 	call malloc
-	movq %rax, %r8
-	movq $2, %r10
-	movq $0, %r9
-	movq %r10, 0(%r8)
-	movq %r9, 8(%r8)
+	movq %rax, %r10
+	movq $2, %r9
+	movq $0, %r8
+	movq %r9, 0(%r10)
+	movq %r8, 8(%r10)
 	movq -72(%rbp), %r11
-	movq %r8, 16(%r11)
+	movq %r10, 16(%r11)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
@@ -311,15 +302,6 @@ L263:
 	movq %r8, 8(%r10)
 	movq -72(%rbp), %r11
 	movq %r10, 88(%r11)
-	movq $16, %rdi
-	call malloc
-	movq %rax, %r10
-	movq $2, %r9
-	movq $10, %r8
-	movq %r9, 0(%r10)
-	movq %r8, 8(%r10)
-	movq -72(%rbp), %r11
-	movq %r10, 96(%r11)
 	movq -72(%rbp), %r15
 	movq 8(%r15), %r8
 	movq -64(%rbp), %r10
@@ -345,7 +327,7 @@ L70:
 	movq 0(%r10), %rdi
 	call __print__
 	incq -56(%rbp)
-	jmp L263
+	jmp L247
 	.data
 .LC4:
 	.string "None"
