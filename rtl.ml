@@ -156,7 +156,7 @@ and rtl_expr_addr e ctx ld rd =
     let type_reg = Register.fresh () in
     let addr_reg = Register.fresh () in
     let l_move = add_to_cfg (Embinop (Ops.Mmov, addr_reg, rd, ld)) in
-    let store_lb_2 = add_to_cfg (Estore (val_reg, addr_reg, 8, ld)) in
+    let store_lb_2 = add_to_cfg (Estore (val_reg, addr_reg, 8, l_move)) in
     let store_lb = add_to_cfg (Estore (type_reg, addr_reg, 0, store_lb_2)) in
     let bool_of_i = if b then Cint 1L else Cint 0L in
     let val_lb = add_to_cfg (Econst (bool_of_i, val_reg, store_lb)) in
@@ -245,14 +245,13 @@ and my_print_macro e ctx ld rd =
   let r_ret_useless = Register.fresh () in
       let r_type = Register.fresh () in
       let r_val = Register.fresh () in
-      let r_addr = Register.fresh () in
       let r_antislashn = Register.fresh () in
 
       let l_antislashn = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_antislashn], ld)) in
       let load_antislashn = add_to_cfg (Econst(Cint 10L, r_antislashn, l_antislashn)) in
 
       let is_leq_branch reg i l_true l_next =
-        add_to_cfg (Emubranch (Ops.Mjgi (i), reg, l_next, l_true))
+        add_to_cfg (Emubranch (Ops.Mjlei (i), reg, l_true, l_next))
       in
 
       (* NoneType *)
@@ -279,7 +278,7 @@ and my_print_macro e ctx ld rd =
       in
       
       (* String *)
-      let lbl_3 =
+      (*let lbl_3 =
         let r_char = Register.fresh () in
         let r_counter = Register.fresh () in
         let r_idx = Register.fresh () in
@@ -320,10 +319,11 @@ and my_print_macro e ctx ld rd =
         let l_loadtwo = add_to_cfg (Econst (Cint 2L, r_two, l_cmp)) in
         let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_loadtwo)) in
         add_to_cfg (Econst(Cint 0L, r_counter, l_loadone));
-      in
+      in*)
 
       (*let l_cmp4 = is_equal_branch r_type r_cmp 4L lbl_4 ld in*)
       (*let l_cmp3 = is_equal_branch r_type r_cmp 3L lbl_3 ld in*)
+      let r_addr = Register.fresh () in
       let l_cmp2 = is_leq_branch r_type 2L lbl_2 ld in
       let l_cmp1 = is_leq_branch r_type 1L lbl_1 l_cmp2 in
       let l_cmp0 = is_leq_branch r_type 0L lbl_0 l_cmp1 in
