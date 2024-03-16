@@ -20,9 +20,11 @@ let my_malloc size addr_reg l_next =
 
 let my_lea r_addr r_base m r_idx l =
   let r_m = Register.fresh() in
-  let l_add = add_to_cfg (Embinop (Ops.Madd, r_base, r_addr, l)) in
-  let l_mul = add_to_cfg (Embinop (Ops.Mmul, r_m, r_addr, l_add)) in
-  let l_load = add_to_cfg (Embinop (Ops.Mmov, r_idx, r_addr, l_mul)) in
+  let m_intermediate_addr = Register.fresh () in
+  let l_mov = add_to_cfg (Embinop (Ops.Mmov, m_intermediate_addr, r_addr, l)) in
+  let l_add = add_to_cfg (Embinop (Ops.Madd, r_base, m_intermediate_addr, l_mov)) in
+  let l_mul = add_to_cfg (Embinop (Ops.Mmul, r_m, m_intermediate_addr, l_add)) in
+  let l_load = add_to_cfg (Embinop (Ops.Mmov, r_idx, m_intermediate_addr, l_mul)) in
   add_to_cfg (Econst (Cint m, r_m, l_load))
 
 let my_eloadr r_out r_base m r_idx l =

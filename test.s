@@ -59,11 +59,12 @@ main:
 	movq $0, %r8
 	movq %r9, 0(%r10)
 	movq %r8, 8(%r10)
-	movq $8, %r9
-	movq -8(%rbp), %r8
-	imulq %r9, %r8
-	addq %r10, %r8
-	movq 0(%r8), %r10
+	movq $8, %r8
+	movq -8(%rbp), %r9
+	imulq %r8, %r9
+	addq %r10, %r9
+	movq %r9, %r10
+	movq 0(%r10), %r10
 	movq 8(%r10), %r10
 	movq $24, %rdi
 	call malloc
