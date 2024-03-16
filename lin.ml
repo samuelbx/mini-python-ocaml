@@ -208,6 +208,8 @@ and load_string g l str op lb =
 and instru g l = function
   | Ltltree.Econst (Cint n, op, lb) ->
       emit l (movq (imm64 n) (operandq op)); lin g lb
+  | Ltltree.Econst (Cbool b, op, lb) ->
+      emit l (movq (imm64 (if b then 1L else 0L)) (operandq op)); lin g lb
   | Ltltree.Econst (Cstring s, op, lb) ->
       load_string g l s op lb;
   | Ltltree.Egoto (lb) -> emit_only_l l; lin g lb
