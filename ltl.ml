@@ -94,11 +94,30 @@ let ltl_i_binop colors binop reg1 reg2 lb =
    @param srcOffset offset to src_preg
    @param dest_preg dest pseudo-register
    @param lb next label
+   dest_preg <- src_preg(offset)
 *)
+let to_tmp1 op l = (Embinop (Ops.Mmov, op, (Ltltree.Reg Register.tmp1), l))
+
+let to_tmp2 op l =  (Embinop (Ops.Mmov, op, (Ltltree.Reg Register.tmp2), l))
+
+let from_tmp1_to op l = (Embinop (Ops.Mmov, (Ltltree.Reg Register.tmp1), op, l))
+
+let from_tmp2_to op l = (Embinop (Ops.Mmov, (Ltltree.Reg Register.tmp2), op, l))
+
 let ltl_i_load colors src_preg srcOffset dest_preg lb =
   let dest_op = lookup colors dest_preg in
   let src_op = lookup colors src_preg in
-  let post_lb, dest_reg =
+  begin match src_op, dest_op with
+  | Reg r1, Reg r2 -> Eload(r1, srcOffset, r2, lb)
+  | Reg r1, Spilled _ ->
+    Eload (r1, srcOffset, Register.tmp1, generate (from_tmp1_to dest_op lb))
+  | Spilled _, Reg r2 ->
+    to_tmp1 src_op (generate (Ltltree.Eload (Register.tmp1, srcOffset, r2, lb)))
+  | Spilled _, Spilled _ ->
+    let l1 = generate (from_tmp2_to dest_op lb) in
+    let l2 = generate (Eload (Register.tmp1, srcOffset, Register.tmp2, l1)) in
+    to_tmp1 src_op l2 end
+  (*let post_lb, dest_reg =
     match dest_op with
     | Reg r -> (lb, r)
     | Spilled i ->
@@ -118,7 +137,7 @@ let ltl_i_load colors src_preg srcOffset dest_preg lb =
         let precopy_instr = Embinop (Ops.Mmov, src_op, src_op, load_lb) in
         precopy_instr
   in
-  pre_instr
+  pre_instr*)
 
 (**
    Converts a 'store' to its LTL equivalent
@@ -131,6 +150,18 @@ let ltl_i_load colors src_preg srcOffset dest_preg lb =
 let ltl_i_store colors src_preg dest_preg destOffset lb =
   let dest_op = lookup colors dest_preg in
   let src_op = lookup colors src_preg in
+  begin match src_op, dest_op with
+  | Reg r1, Reg r2 -> Estore (r2, r1, destOffset, lb)
+  | Reg r1, Spilled _ ->
+    to_tmp2 dest_op (generate (Estore (Register.tmp2, r1, destOffset, lb)))
+  | Spilled _, Reg r2 ->
+    to_tmp1 src_op (generate (Estore (r2, Register.tmp1, destOffset, lb)))
+  | Spilled _, Spilled _ ->
+    let l' = generate (Estore (Register.tmp2, Register.tmp1, destOffset, lb)) in
+    to_tmp1 src_op (generate (to_tmp2 dest_op l'))
+  end
+
+  (*
   let post_lb, dest_reg =
     match dest_op with
     | Reg r -> (lb, r)
@@ -151,7 +182,7 @@ let ltl_i_store colors src_preg dest_preg destOffset lb =
         let precopy_instr = Embinop (Ops.Mmov, src_op, src_op, load_lb) in
         precopy_instr
   in
-  pre_instr
+  pre_instr*)
 
 (**
    Converts a ERTL instr to LTL

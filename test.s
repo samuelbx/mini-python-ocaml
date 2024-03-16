@@ -9,13 +9,13 @@ main:
 	movq %rax, %r9
 	movq $2, %r8
 	movq $10, %r10
-	movq %r8, 0(%r9)
-	movq %r10, 8(%r9)
+	movq %r9, 0(%r8)
+	movq %r9, 8(%r10)
 	movq %r9, -8(%rbp)
-	movq %r11, %r11
-	movq 0(%r11), %r8
-	movq %r11, %r11
-	movq 8(%r11), %rsi
+	movq -8(%rbp), %r15
+	movq 0(%r15), %r8
+	movq -8(%rbp), %r15
+	movq 8(%r15), %rsi
 	movq $0, %r10
 	subq %r8, %r10
 	testq %r10, %r10
@@ -34,8 +34,8 @@ L11:
 	movq %rax, %r10
 	movq $2, %r9
 	movq $0, %r8
-	movq %r9, 0(%r10)
-	movq %r8, 8(%r10)
+	movq %r10, 0(%r9)
+	movq %r10, 8(%r8)
 	movq 8(%r10), %rax
 	movq %rbp, %rsp
 	popq %rbp
