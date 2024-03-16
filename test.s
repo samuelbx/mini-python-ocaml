@@ -52,6 +52,8 @@ main:
 	jle L21
 	cmpq $3, %r10
 	jle L37
+	cmpq $4, %r10
+	jle L55
 L11:
 	movq $16, %rdi
 	call malloc
@@ -64,6 +66,38 @@ L11:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
+L55:
+	movq $0, -32(%rbp)
+	movq $.LC1, -48(%rbp)
+L53:
+	movq -8(%rbp), %r15
+	movq 8(%r15), %r10
+	movq $1, -40(%rbp)
+	movq $2, %r8
+	subq -32(%rbp), %r10
+	testq %r10, %r10
+	jnz L48
+L13:
+	movq $10, %rdi
+	call putchar
+	movq %rax, %r10
+	jmp L11
+L48:
+	movq -32(%rbp), %r10
+	addq %r8, %r10
+	movq $8, %r8
+	imulq %r8, %r10
+	addq -8(%rbp), %r10
+	movq 0(%r10), %r10
+	movq 8(%r10), %rsi
+	movq -48(%rbp), %rdi
+	movq $0, %rax
+	call printf
+	movq %rax, %r10
+	movq -32(%rbp), %r15
+	addq -40(%rbp), %r15
+	movq %r15, -32(%rbp)
+	jmp L53
 L37:
 	movq $0, -16(%rbp)
 L36:
@@ -73,13 +107,7 @@ L36:
 	movq $2, %r8
 	subq -16(%rbp), %r10
 	testq %r10, %r10
-	jnz L31
-L13:
-	movq $10, %rdi
-	call putchar
-	movq %rax, %r10
-	jmp L11
-L31:
+	jz L13
 	movq -16(%rbp), %r10
 	addq %r8, %r10
 	movq $8, %r8

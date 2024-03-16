@@ -330,8 +330,8 @@ and my_print_macro e ctx ld rd =
       add_to_cfg (Econst(Cint 0L, r_counter, l_load_fmt));
     in
 
-      (*let l_cmp4 = is_equal_branch r_type r_cmp 4L lbl_4 ld in*)
-      let l_cmp3 = is_leq_branch r_type 3L lbl_3 ld in
+      let l_cmp4 = is_leq_branch r_type 4L lbl_4 ld in
+      let l_cmp3 = is_leq_branch r_type 3L lbl_3 l_cmp4 in
       let l_cmp2 = is_leq_branch r_type 2L lbl_2 l_cmp3 in
       let l_cmp1 = is_leq_branch r_type 1L lbl_1 l_cmp2 in
       let l_cmp0 = is_leq_branch r_type 0L lbl_0 l_cmp1 in
