@@ -22,7 +22,8 @@ main:
 	movq %r8, 8(%r10)
 	movq %r10, 16(%r15)
 	movq %r15, -8(%rbp)
-	movq -8(%rbp), %r10
+	movq %r11, %r11
+	movq 8(%r11), %r10
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
