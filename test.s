@@ -127,7 +127,7 @@ main:
 	movq %r10, 0(%r11)
 	movq -192(%rbp), %r11
 	movq %r8, 8(%r11)
-	movq $0, -40(%rbp)
+	movq $1, -40(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r8
@@ -137,7 +137,7 @@ main:
 	movq %r15, 8(%r8)
 	movq -192(%rbp), %r11
 	movq %r8, 16(%r11)
-	movq $0, -32(%rbp)
+	movq $3, -32(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r8
@@ -147,7 +147,7 @@ main:
 	movq %r15, 8(%r8)
 	movq -192(%rbp), %r11
 	movq %r8, 24(%r11)
-	movq $0, -16(%rbp)
+	movq $4, -16(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r8
@@ -157,7 +157,7 @@ main:
 	movq %r15, 8(%r8)
 	movq -192(%rbp), %r11
 	movq %r8, 32(%r11)
-	movq $0, -8(%rbp)
+	movq $5, -8(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r8
@@ -167,7 +167,7 @@ main:
 	movq %r15, 8(%r8)
 	movq -192(%rbp), %r11
 	movq %r8, 40(%r11)
-	movq $0, -208(%rbp)
+	movq $7, -208(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
@@ -177,7 +177,7 @@ main:
 	movq %r15, 8(%r10)
 	movq -192(%rbp), %r11
 	movq %r10, 48(%r11)
-	movq $0, -200(%rbp)
+	movq $12, -200(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
@@ -189,7 +189,7 @@ main:
 	movq %r10, 56(%r11)
 	movq -192(%rbp), %r15
 	movq %r15, -112(%rbp)
-	movq $0, -184(%rbp)
+	movq $1, -184(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
@@ -228,7 +228,7 @@ L95:
 	movq %r15, 8(%r10)
 	movq -48(%rbp), %r11
 	movq %r10, 16(%r11)
-	movq $0, -168(%rbp)
+	movq $1, -168(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
@@ -238,7 +238,7 @@ L95:
 	movq %r15, 8(%r10)
 	movq -48(%rbp), %r11
 	movq %r10, 24(%r11)
-	movq $0, -160(%rbp)
+	movq $2, -160(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
@@ -267,7 +267,7 @@ L95:
 	movq %r15, 8(%r10)
 	movq -120(%rbp), %r11
 	movq %r10, 16(%r11)
-	movq $0, -136(%rbp)
+	movq $1, -136(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10
@@ -277,7 +277,7 @@ L95:
 	movq %r15, 8(%r10)
 	movq -120(%rbp), %r11
 	movq %r10, 24(%r11)
-	movq $0, -128(%rbp)
+	movq $2, -128(%rbp)
 	movq $16, %rdi
 	call malloc
 	movq %rax, %r10

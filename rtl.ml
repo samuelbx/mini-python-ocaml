@@ -164,7 +164,7 @@ and rtl_expr_addr e ctx ld rd =
   | TEcst (Cint i) ->
     let val_reg_pre = Register.fresh () in
     let l_alloc = alloc_int val_reg_pre rd ld in
-    add_to_cfg (Econst (Cint 0L, val_reg_pre, l_alloc))
+    add_to_cfg (Econst (Cint i, val_reg_pre, l_alloc))
   | TEcst (Cbool b) ->
     let val_reg = Register.fresh () in
     let type_reg = Register.fresh () in
