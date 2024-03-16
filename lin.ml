@@ -221,7 +221,10 @@ and instru g l = function
   | Ltltree.Epush (op, lb) -> emit l (pushq (operandq(op))); lin g lb
   | Ltltree.Epop (op, lb) -> emit l (popq (registerq(op))); lin g lb
   | Ltltree.Emubranch (mubranch, op, lb1, lb2) -> treat_mubranch mubranch op lb1 lb2 g l 
-  | Ltltree.Ecall (ident , lb) -> emit l (call ident); lin g lb (* TODO: implement printf, zero %eax *)
+  | Ltltree.Ecall (ident , lb) -> 
+    if ident = "printf" then
+      emit l (movq (imm64 0L) (reg rax));
+    emit l (call ident); lin g lb
   | Ltltree.Embbranch (mbbranch, op1, op2, lb1, lb2) -> treat_mbbranch mbbranch op1 op2 lb1 lb2 g l 
 
 let rec linearize = function
