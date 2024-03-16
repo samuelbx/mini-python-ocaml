@@ -1,11 +1,19 @@
 	.text
 	.globl	main
+my_malloc:
+	pushq   %rbp
+	movq    %rsp, %rbp
+	andq    $-16, %rsp  # 16-byte stack alignment
+	call    malloc
+	movq    %rbp, %rsp
+	popq    %rbp
+	ret
 main:
 	pushq %rbp
 	movq %rsp, %rbp
 	addq $-40, %rsp
 	movq $16, %rdi
-	call malloc
+	call my_malloc
 	movq %rax, -8(%rbp)
 	movq $2, %r8
 	movq $87, %r10
@@ -32,7 +40,7 @@ main:
 	jz L23
 L10:
 	movq $16, %rdi
-	call malloc
+	call my_malloc
 	movq %rax, %r10
 	movq $2, %r9
 	movq $0, %r8
