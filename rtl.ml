@@ -165,7 +165,7 @@ and rtl_expr_addr e ctx ld rd =
       let list_label = set_string 2 (explode s) in
       let store_lb_2 = add_to_cfg (Estore (len_reg, rd, 8, list_label)) in
       let store_lb = add_to_cfg (Estore (type_reg, rd, 0, store_lb_2)) in
-      let val_lb = add_to_cfg (Econst (Cint(Int64.of_int (8*(len_list+2))), len_reg, store_lb)) in
+      let val_lb = add_to_cfg (Econst (Cint(Int64.of_int (len_list)), len_reg, store_lb)) in
       let type_lb = add_to_cfg (Econst (Cint 3L, type_reg, val_lb)) in
       let alloc_lb = my_malloc ((len_list+2)) rd type_lb in
       alloc_lb
@@ -190,7 +190,7 @@ and rtl_expr_addr e ctx ld rd =
     let list_label = set_list 2 expr_list in
     let store_lb_2 = add_to_cfg (Estore (len_reg, rd, 8, list_label)) in
     let store_lb = add_to_cfg (Estore (type_reg, rd, 0, store_lb_2)) in
-    let val_lb = add_to_cfg (Econst (Cint(Int64.of_int (8*len_list+2)), len_reg, store_lb)) in
+    let val_lb = add_to_cfg (Econst (Cint(Int64.of_int (len_list)), len_reg, store_lb)) in
     let type_lb = add_to_cfg (Econst (Cint 4L, type_reg, val_lb)) in
     let alloc_lb = my_malloc (len_list+2) rd type_lb in
     alloc_lb
