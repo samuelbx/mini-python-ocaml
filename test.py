@@ -1,1 +1,1 @@
-print(30)
+print(False)
