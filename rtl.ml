@@ -26,13 +26,11 @@ let my_lea r_addr r_base m r_idx l =
   add_to_cfg (Econst (Cint m, r_m, l_load))
 
 let my_eloadr r_out r_base m r_idx l =
-  let r_m = Register.fresh() in
   let r_addr = Register.fresh() in
   let l_load = add_to_cfg (Eload (r_addr, 0, r_out, l)) in
   my_lea r_addr r_base m r_idx l_load
 
 let my_estorer r_in r_base m r_idx l =
-  let r_m = Register.fresh() in
   let r_addr = Register.fresh() in
   let l_load = add_to_cfg (Estore (r_in, r_addr, 0, l)) in
   my_lea r_addr r_base m r_idx l_load
@@ -275,7 +273,7 @@ and my_print_macro e ctx ld rd =
         let load_char = my_eloadr r_char r_addr 8L r_idx l_putchar in
         let l_set_idx_2 = add_to_cfg (Embinop (Ops.Madd, r_two, r_idx, load_char)) in
         let l_set_idx = add_to_cfg (Embinop (Ops.Mmov, r_counter, r_idx, l_set_idx_2)) in
-        let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, l_set_idx, l_antislashn)) in
+        let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, l_set_idx, load_antislashn)) in
         let l_loadtwo = add_to_cfg (Econst (Cint 2L, r_two, l_cmp)) in
         let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_loadtwo)) in
         add_to_cfg (Econst(Cint 0L, r_counter, l_loadone))
