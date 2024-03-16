@@ -169,7 +169,9 @@ and rtl_expr_addr e ctx ld rd =
       let type_lb = add_to_cfg (Econst (Cint 3L, type_reg, val_lb)) in
       let alloc_lb = my_malloc (8*(len_list+2)) rd type_lb in
       alloc_lb
-  | TEvar v -> add_to_cfg (Embinop (Ops.Mmov, Hashtbl.find ctx v.v_name, rd, ld))
+  | TEvar v ->
+    print_endline "eror 2";
+    add_to_cfg (Embinop (Ops.Mmov, Hashtbl.find ctx v.v_name, rd, ld))
   | TEbinop (binop, e1, e2) -> rtl_binop binop e1 e2 ctx ld rd
   | TEunop (unop, expr) -> rtl_unop unop expr ctx ld rd
   | TEcall (fn, expr_list) -> rtl_call fn expr_list ctx ld rd
@@ -264,8 +266,7 @@ and my_print_macro e ctx ld rd =
         let r_counter = Register.fresh () in
         let r_one = Register.fresh () in
         (* goto cmp < increment counter < putchar < load char *)
-        let lbl_toreplace = Label.fresh () in
-        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, lbl_toreplace)) in
+        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, load_antislashn)) in
         let l_putchar = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_char], l_incr_counter)) in
         let load_char = my_eloadr r_char r_addr 8L r_counter l_putchar in
         let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, load_char, l_antislashn)) in
@@ -280,8 +281,7 @@ and my_print_macro e ctx ld rd =
         let r_one = Register.fresh () in
         let r_eight = Register.fresh () in
         (* goto cmp < increment counter < putchar < load char *)
-        let lbl_toreplace = Label.fresh () in
-        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, lbl_toreplace)) in
+        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, load_antislashn)) in
         let l_putchar = add_to_cfg (Ecall (r_ret_useless, "__print__", [r_elem_addr], l_incr_counter)) in
         let l_lea = my_lea r_elem_addr r_addr 8L r_counter l_putchar in
         let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, l_lea, l_antislashn)) in
@@ -310,6 +310,7 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
   | TSset (e1, e2, e3) -> 
           (match e2 with 
    | TEvar v -> 
+    print_endline "eror 3";
         let var_reg =
             if Hashtbl.mem ctx v.v_name then Hashtbl.find ctx v.v_name
             else raise (Error "Variable not found in context")
@@ -337,18 +338,10 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
       let result_reg = Register.fresh () in
       rtl_expr_val e ctx ld result_reg
   | TSprint e ->
+      print_endline "testok";
       my_print_macro e ctx ld r_ret
-
-      
-  | TSprint expr ->
-      let r_ret_printf = Register.fresh() in
-      let r_expr = Register.fresh () in
-      let r_antislashn = Register.fresh () in
-      let l_call_newline = add_to_cfg (Ecall (r_ret_printf, "printf", [r_antislashn], ld)) in
-      let l_load_newline = rtl_expr_val (TEcst(Cstring("\n"))) ctx l_call_newline r_antislashn in
-      let l_call = add_to_cfg (Ecall (r_ret_printf, "printf", [r_expr], l_load_newline)) in
-      rtl_expr_val expr ctx l_call r_expr; 
   | TSassign (v, e) ->
+      print_endline "test1";
       let var_reg =
         if Hashtbl.mem ctx v.v_name then Hashtbl.find ctx v.v_name
         else
