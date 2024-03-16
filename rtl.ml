@@ -15,7 +15,7 @@ let add_to_cfg i =
 let my_malloc size addr_reg l_next =
   let size_reg = Register.fresh () in
   let alloc_lb = add_to_cfg (Ecall (addr_reg, "malloc", [size_reg], l_next)) in
-  let load_size_lb = add_to_cfg (Econst (Cint (Int64.of_int (8*size)), size_reg, alloc_lb)) in
+  let load_size_lb = add_to_cfg (Econst (Cint (Int64.of_int (8*(size+1))), size_reg, alloc_lb)) in
   load_size_lb
 
 let my_lea r_addr r_base m r_idx l =
@@ -111,7 +111,7 @@ and rtl_call fn params ctx ld rd =
   let rec gen_registers n = if n == 0 then [] else Register.fresh () :: gen_registers (n - 1) in
   let rec rtl_params params regs_args ld =
     match (params, regs_args) with
-    | e :: etail, f :: ftail -> rtl_expr_val e ctx (rtl_params etail ftail ld) f
+    | e :: etail, f :: ftail -> rtl_expr_addr e ctx (rtl_params etail ftail ld) f
     | [], [] -> ld
     | _, _ -> raise (Error "(rtl) bad arity in function call")
   in
@@ -124,36 +124,45 @@ and rtl_expr_addr e ctx ld rd =
   match e with
   | TEcst (Cnone) -> 
     let val_type_reg = Register.fresh () in
-    let store_lb_2 = add_to_cfg (Estore (val_type_reg, rd, 8, ld)) in
-    let store_lb = add_to_cfg (Estore (val_type_reg, rd, 0, store_lb_2)) in
+    let addr_reg = Register.fresh () in
+    let l_move = add_to_cfg (Embinop (Ops.Mmov, addr_reg, rd, ld)) in
+    let store_lb_2 = add_to_cfg (Estore (val_type_reg, addr_reg, 8, l_move)) in
+    let store_lb = add_to_cfg (Estore (val_type_reg, addr_reg, 0, store_lb_2)) in
     let val_type_lb = add_to_cfg (Econst (Cint 0L, val_type_reg, store_lb)) in
-    let alloc_lb = my_malloc 2 rd val_type_lb in
+    let alloc_lb = my_malloc 2 addr_reg val_type_lb in
     alloc_lb
   | TEcst (Cint i) ->
     let val_reg = Register.fresh () in
     let type_reg = Register.fresh () in
-    let store_lb_2 = add_to_cfg (Estore (val_reg, rd, 8, ld)) in
-    let store_lb = add_to_cfg (Estore (type_reg, rd, 0, store_lb_2)) in
+    let addr_reg = Register.fresh () in
+    let l_move = add_to_cfg (Embinop (Ops.Mmov, addr_reg, rd, ld)) in
+    let store_lb_2 = add_to_cfg (Estore (val_reg, addr_reg, 8, l_move)) in
+    let store_lb = add_to_cfg (Estore (type_reg, addr_reg, 0, store_lb_2)) in
     let val_lb = add_to_cfg (Econst (Cint i, val_reg, store_lb)) in
     let type_lb = add_to_cfg (Econst (Cint 2L, type_reg, val_lb)) in
-    let alloc_lb = my_malloc 2 rd type_lb in
+    let alloc_lb = my_malloc 2 addr_reg type_lb in
     alloc_lb
   | TEcst (Cbool b) ->
     let val_reg = Register.fresh () in
     let type_reg = Register.fresh () in
-    let store_lb_2 = add_to_cfg (Estore (val_reg, rd, 8, ld)) in
-    let store_lb = add_to_cfg (Estore (type_reg, rd, 0, store_lb_2)) in
+    let addr_reg = Register.fresh () in
+    let l_move = add_to_cfg (Embinop (Ops.Mmov, addr_reg, rd, ld)) in
+    let store_lb_2 = add_to_cfg (Estore (val_reg, addr_reg, 8, ld)) in
+    let store_lb = add_to_cfg (Estore (type_reg, addr_reg, 0, store_lb_2)) in
     let val_lb = add_to_cfg (Econst (Cbool b, val_reg, store_lb)) in
     let type_lb = add_to_cfg (Econst (Cint 1L, type_reg, val_lb)) in
-    let alloc_lb = my_malloc 2 rd type_lb in
+    let alloc_lb = my_malloc 2 addr_reg type_lb in
     alloc_lb
   | TEcst (Cstring s) ->
+    let addr_reg = Register.fresh () in
+    let l_move = add_to_cfg (Embinop (Ops.Mmov, addr_reg, rd, ld)) in
+    
     let explode t = List.init (String.length t) (String.get t) in
     let rec set_string i = function
-      | [] -> ld
+      | [] -> l_move
       | head :: tail ->
           let value_reg = Register.fresh () in
-          let alloc_lb = add_to_cfg (Estore (value_reg, rd, i*8, set_string (i+1) tail)) in
+          let alloc_lb = add_to_cfg (Estore (value_reg, addr_reg, i*8, set_string (i+1) tail)) in
           let value_lb = add_to_cfg (Econst(Cint(Int64.of_int (Char.code head)), value_reg, alloc_lb)) in
           value_lb
       in
@@ -161,11 +170,11 @@ and rtl_expr_addr e ctx ld rd =
       let type_reg = Register.fresh () in
       let len_reg = Register.fresh () in
       let list_label = set_string 2 (explode s) in
-      let store_lb_2 = add_to_cfg (Estore (len_reg, rd, 8, list_label)) in
-      let store_lb = add_to_cfg (Estore (type_reg, rd, 0, store_lb_2)) in
+      let store_lb_2 = add_to_cfg (Estore (len_reg, addr_reg, 8, list_label)) in
+      let store_lb = add_to_cfg (Estore (type_reg, addr_reg, 0, store_lb_2)) in
       let val_lb = add_to_cfg (Econst (Cint(Int64.of_int (len_list)), len_reg, store_lb)) in
       let type_lb = add_to_cfg (Econst (Cint 3L, type_reg, val_lb)) in
-      let alloc_lb = my_malloc ((len_list+2)) rd type_lb in
+      let alloc_lb = my_malloc ((len_list+2)) addr_reg type_lb in
       alloc_lb
   | TEvar v ->
     print_endline "eror 2";
@@ -193,8 +202,12 @@ and rtl_expr_addr e ctx ld rd =
     let alloc_lb = my_malloc (len_list+2) rd type_lb in
     alloc_lb
   | TErange e -> raise (Error "(rtl) not implemented")
-  | TEget (e1, TEvar e2) ->
-      raise (Error "(rtl) not implemented")
+  | TEget (e1, e2) ->
+      let r_addr_e1 = Register.fresh () in
+      let r_val_e2 = Register.fresh () in
+      let l_load = my_eloadr rd r_addr_e1 8L r_val_e2 ld in
+      let l_addr_e1 = rtl_expr_addr e2 ctx l_load r_addr_e1 in
+      rtl_expr_val e2 ctx l_addr_e1 r_val_e2
   | TEget (e1, e2) -> 
      raise (Error "(rtl) not implemented")
 
@@ -254,10 +267,8 @@ and my_print_macro e ctx ld rd =
       (* Int *)
       let lbl_2 = 
         let r_fmt = Register.fresh () in
-        let r_val_2 = Register.fresh () in
-        let lbl_print_int = add_to_cfg (Ecall (r_ret_useless, "printf", [r_fmt; r_val_2], load_antislashn)) in
-        let lbl_addr = add_to_cfg (Eload (r_addr, 8, r_val_2, lbl_print_int)) in
-        add_to_cfg(Econst(Cstring "%d", r_fmt, lbl_addr))
+        let lbl_print_int = add_to_cfg (Ecall (r_ret_useless, "printf", [r_fmt; r_val], load_antislashn)) in
+        add_to_cfg(Econst(Cstring "%d", r_fmt, lbl_print_int))
       in
       
       (* String *)
@@ -269,18 +280,18 @@ and my_print_macro e ctx ld rd =
         let r_two = Register.fresh () in
         let r_val_2 = Register.fresh () in
 
-        let l_placeholder = Label.fresh () in
-
         (* goto cmp < increment counter < putchar < load char *)
-        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, load_antislashn)) in
+        let l_incr_counter = Label.fresh () in
         let l_putchar = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_char], l_incr_counter)) in
         let load_char = my_eloadr r_char r_addr 8L r_idx l_putchar in
         let l_set_idx_2 = add_to_cfg (Embinop (Ops.Madd, r_two, r_idx, load_char)) in
         let l_set_idx = add_to_cfg (Embinop (Ops.Mmov, r_counter, r_idx, l_set_idx_2)) in
-        let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_val_2, r_counter, l_set_idx, load_antislashn)) in
-        let l_loadtwo = add_to_cfg (Econst (Cint 2L, r_two, l_cmp)) in
+        let l_cmp = add_to_cfg (Emubranch (Ops.Mjnz, r_val_2, l_set_idx, load_antislashn)) in
+        let l_sub = add_to_cfg (Embinop (Ops.Msub, r_counter, r_val_2, l_cmp)) in
+        let l_loadtwo = add_to_cfg (Econst (Cint 2L, r_two, l_sub)) in
         let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_loadtwo)) in
         let lbl_addr = add_to_cfg (Eload (r_addr, 8, r_val_2, l_loadone)) in
+        graph := Label.M.add l_incr_counter (Embinop (Ops.Madd, r_one, r_counter, lbl_addr)) !graph;
         add_to_cfg (Econst(Cint 0L, r_counter, lbl_addr));
       in
 
@@ -305,11 +316,14 @@ and my_print_macro e ctx ld rd =
       in
 
       (*let l_cmp4 = is_equal_branch r_type r_cmp 4L lbl_4 ld in*)
-      let l_cmp3 = is_equal_branch r_type r_cmp 3L lbl_3 ld in
-      let l_cmp2 = is_equal_branch r_type r_cmp 2L lbl_2 l_cmp3 in
+      (*let l_cmp3 = is_equal_branch r_type r_cmp 3L lbl_3 ld in*)
+      let l_cmp2 = is_equal_branch r_type r_cmp 2L lbl_2 ld in
       let l_cmp1 = is_equal_branch r_type r_cmp 1L lbl_1 l_cmp2 in
       let l_cmp0 = is_equal_branch r_type r_cmp 0L lbl_0 l_cmp1 in
-      rtl_expr_val_type_addr e ctx l_cmp0 r_val r_type r_addr
+      (*let return_zero = add_to_cfg (Econst(Cint 0L, rd, l_cmp0)) in*)
+      let val_lb = add_to_cfg (Eload (r_addr, 8, r_val, l_cmp0)) in
+      let type_lb = add_to_cfg (Eload (r_addr, 0, r_type, val_lb)) in
+      rtl_expr_addr e ctx type_lb r_addr
 
 and rtl_stmt stmt ctx ld r_ret l_exit =
   match stmt with
