@@ -3,7 +3,7 @@
 __print__:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-64, %rsp
+	addq $-56, %rsp
 	movq %rdi, -8(%rbp)
 	movq -8(%rbp), %r15
 	movq 0(%r15), %r10
@@ -18,44 +18,40 @@ __print__:
 	cmpq $3, %r10
 	jle L27
 	cmpq $4, %r10
-	jle L45
+	jle L43
 L1:
 	movq -32(%rbp), %rax
 	movq %rbp, %rsp
 	popq %rbp
 	ret
-L45:
-	movq $0, -40(%rbp)
-	movq $.LC1, -56(%rbp)
 L43:
+	movq $0, -40(%rbp)
+L42:
 	movq -8(%rbp), %r15
 	movq 8(%r15), %r10
 	movq $1, -48(%rbp)
 	movq $2, %r8
 	subq -40(%rbp), %r10
 	testq %r10, %r10
-	jnz L38
+	jnz L37
 L3:
 	movq $10, %rdi
 	call putchar
 	movq %rax, %r10
 	jmp L1
-L38:
+L37:
 	movq -40(%rbp), %r10
 	addq %r8, %r10
 	movq $8, %r8
 	imulq %r8, %r10
 	addq -8(%rbp), %r10
-	movq 0(%r10), %r10
-	movq 8(%r10), %rsi
-	movq -56(%rbp), %rdi
-	movq $0, %rax
-	call printf
+	movq 0(%r10), %rdi
+	call __print__
 	movq %rax, %r10
 	movq -40(%rbp), %r15
 	addq -48(%rbp), %r15
 	movq %r15, -40(%rbp)
-	jmp L43
+	jmp L42
 L27:
 	movq $0, -16(%rbp)
 L26:
@@ -105,7 +101,7 @@ L5:
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-64, %rsp
+	addq $-56, %rsp
 	movq $16, %rdi
 	call malloc
 	movq %rax, %rdi
@@ -132,12 +128,12 @@ main:
 	call __print__
 	movq $40, %rdi
 	call malloc
-	movq %rax, -64(%rbp)
+	movq %rax, -56(%rbp)
 	movq $4, %r10
 	movq $3, %r8
-	movq -64(%rbp), %r11
+	movq -56(%rbp), %r11
 	movq %r10, 0(%r11)
-	movq -64(%rbp), %r11
+	movq -56(%rbp), %r11
 	movq %r8, 8(%r11)
 	movq $16, %rdi
 	call malloc
@@ -146,7 +142,7 @@ main:
 	movq $1, %r8
 	movq %r9, 0(%r10)
 	movq %r8, 8(%r10)
-	movq -64(%rbp), %r11
+	movq -56(%rbp), %r11
 	movq %r10, 16(%r11)
 	movq $16, %rdi
 	call malloc
@@ -155,7 +151,7 @@ main:
 	movq $2, %r8
 	movq %r9, 0(%r10)
 	movq %r8, 8(%r10)
-	movq -64(%rbp), %r11
+	movq -56(%rbp), %r11
 	movq %r10, 24(%r11)
 	movq $16, %rdi
 	call malloc
@@ -164,9 +160,9 @@ main:
 	movq $3, %r8
 	movq %r9, 0(%r10)
 	movq %r8, 8(%r10)
-	movq -64(%rbp), %r11
+	movq -56(%rbp), %r11
 	movq %r10, 32(%r11)
-	movq -64(%rbp), %rdi
+	movq -56(%rbp), %rdi
 	call __print__
 	movq $16, %rdi
 	call malloc
