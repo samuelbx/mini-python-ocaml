@@ -176,11 +176,24 @@ and rtl_expr_addr e ctx ld rd =
   | TErange e -> raise (Error "(rtl) not implemented")
   | TEget (e1, TEvar e2) ->
       (* TODO: debug, I don't understand most of this *)
-      let ofs = e2.Ast.v_ofs in
-      let r_e2 = Register.fresh () in
-      let l_addr = add_to_cfg (Eload (r_e2, 8 * ofs, rd, ld)) in
-      rtl_expr_addr e1 ctx l_addr r_e2
-  | TEget (e1, e2) -> raise (Error "(rtl) 'get' not implemented")
+        let _ =
+            if Hashtbl.mem ctx e2.v_name then Hashtbl.find ctx e2.v_name
+            else raise (Error "Variable not found in context")
+        in
+        let index_reg = Register.fresh () in
+        let list_reg = Register.fresh () in
+        let get_lb = add_to_cfg (EloadR (list_reg, 0L, index_reg, 8L, rd, ld)) in
+        let list_lb = rtl_expr_val e1 ctx store_lb get_lb in
+        let index_lb = rtl_expr_val e2 ctx list_lb index_reg in
+        index_lb
+  | TEget (e1, e2) -> 
+        let index = Int64.to_int i * 8 in
+        let list_reg = Register.fresh () in
+        let value_reg = Register.fresh () in
+        let get_lb = add_to_cfg (Eload (list_reg, index, rd, ld)) in
+        let list_lb = rtl_expr_val e1 ctx get_lb list_reg in
+        let index = rtl_expr_val e3 ctx list_lb value_reg in
+        index_lb
 
 and val_type_of_addr addr_reg ld type_reg val_reg =
   (* fills type_reg and val_reg with type (between 0 and 4) and value (or len for string/list) *)
@@ -289,7 +302,16 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
   | TSif (expr, if_stmt, else_stmt) -> rtl_if expr if_stmt else_stmt ctx ld r_ret l_exit
   | TSblock block -> rtl_block block ctx ld r_ret l_exit
   | TSfor (v, expr, stmt) ->
-      raise (Error "(rtl) not implemented") (* like rtl_while expr stmt ctx dest_lb return_reg exit_lb *)
+    let loop_start = Label.fresh () in
+    let loop_exit = Label.fresh () in
+    
+    let init_reg = Register.fresh () in
+    let init_lb = rtl_expr_val expr ctx ld init_reg in
+    
+    let test_reg = Register.fresh () in
+    let test_lb = add_to_cfg (Emubranch (Ops.Mjnz, test_reg, loop_start, loop_exit)) in
+    
+    
   | TSset (e1, e2, e3) -> 
           (match e2 with 
    | TEvar v -> 
@@ -297,22 +319,22 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
             if Hashtbl.mem ctx v.v_name then Hashtbl.find ctx v.v_name
             else raise (Error "Variable not found in context")
         in
-        let offset_reg = Register.fresh () in
-        let base_reg = Register.fresh () in
+        let index_reg = Register.fresh () in
+        let list_reg = Register.fresh () in
         let value_reg = Register.fresh () in
-        let store_lb = add_to_cfg (EstoreR (value_reg, 0, base_reg, offset_reg, 8, ld)) in
-        let base_lb = rtl_expr_val e1 ctx store_lb base_reg in
-        let offset_lb = rtl_expr_val e2 ctx base_lb offset_reg in
-        let value_lb = rtl_expr_val e3 ctx offset_lb value_reg in
+        let store_lb = add_to_cfg (EstoreR (value_reg, 0, list_reg, index_reg, 8, ld)) in
+        let list_lb = rtl_expr_val e1 ctx store_lb list_reg in
+        let index_lb = rtl_expr_val e2 ctx list_lb index_reg in
+        let value_lb = rtl_expr_val e3 ctx index_lb value_reg in
         value_lb
 
     | TEcst (Cint i) -> 
         let offset = Int64.to_int i * 8 in
-        let base_reg = Register.fresh () in
+        let list_reg = Register.fresh () in
         let value_reg = Register.fresh () in
-        let base_lb = rtl_expr_val e1 ctx ld base_reg in
-        let value_lb = rtl_expr_val e3 ctx base_lb value_reg in
-        let store_lb = add_to_cfg (Estore (value_reg, base_reg, offset, value_lb)) in
+        let store_lb = add_to_cfg (Estore (value_reg, rd, offset, ld)) in
+        let list_lb = rtl_expr_val e1 ctx store_lb list_reg in
+        let value_lb = rtl_expr_val e3 ctx list_lb value_reg in
         store_lb
     | _ -> raise (Error "Invalid expression in set"))
 

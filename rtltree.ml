@@ -7,6 +7,7 @@ type label = Label.t
 
 type rtlinstr =
   | Econst of Ast.constant * register * label
+  | EloadR of register * int * register * label
   | Eload of register * int * register * label
   | Estore of register * register * int * label
   | EstoreR of register * int * register * register * int * label
@@ -38,6 +39,7 @@ let print_rtlinstr fmt = function
   | Econst (Cnone, r, l) -> fprintf fmt "mov none %a;  goto %a" Register.print r Label.print l
   | Econst (Cbool b, r, l) -> fprintf fmt "mov %b %a;  goto %a" b Register.print r Label.print l
   | Eload (r1, n, r2, l) -> fprintf fmt "mov %d(%a) %a;  goto %a" n Register.print r1 Register.print r2 Label.print l
+  | EloadR (r1, n, r, m, r2, l) -> fprintf fmt "mov %d(%a,%a,%d) %a;  goto %a" n Register.print r1 Register.print r m Register.print r2 Label.print l
   | Estore (r1, r2, n, l) -> fprintf fmt "mov %a %d(%a);  goto %a" Register.print r1 n Register.print r2 Label.print l
   | EstoreR (r1, n, r, r2, m, l) -> fprintf fmt "mov %a %d(%a,%a,%d);  goto %a" Register.print r1 n Register.print r Register.print r2 m Label.print l
   | Emunop (op, r1, l) -> fprintf fmt "%a %a;  goto %a" print_munop op Register.print r1 Label.print l
