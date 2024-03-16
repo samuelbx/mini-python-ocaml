@@ -370,31 +370,16 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
   | TSfor (v, expr, stmt) ->
         rtl_for  expr v stmt ctx ld r_ret l_exit
   | TSset (e1, e2, e3) -> 
-          (match e2 with 
-   | TEvar v -> 
     print_endline "eror 3";
-        let var_reg =
-            if Hashtbl.mem ctx v.v_name then Hashtbl.find ctx v.v_name
-            else raise (Error "Variable not found in context")
-        in
         let index_reg = Register.fresh () in
         let list_reg = Register.fresh () in
         let value_reg = Register.fresh () in
         let store_lb = my_estorer value_reg list_reg 8L index_reg ld in
-        let list_lb = rtl_expr_val e1 ctx store_lb list_reg in
+        let shifted_idx = add_to_cfg (Emunop (Ops.Maddi 2L, index_reg, store_lb)) in
+        let list_lb = rtl_expr_addr e1 ctx shifted_idx list_reg in
         let index_lb = rtl_expr_val e2 ctx list_lb index_reg in
-        let value_lb = rtl_expr_val e3 ctx index_lb value_reg in
+        let value_lb = rtl_expr_addr e3 ctx index_lb value_reg in
         value_lb
-
-    | TEcst (Cint i) -> 
-        let offset = Int64.to_int i * 8 in
-        let list_reg = Register.fresh () in
-        let value_reg = Register.fresh () in
-        let store_lb = add_to_cfg (Estore (value_reg, r_ret, offset, ld)) in
-        let list_lb = rtl_expr_val e1 ctx store_lb list_reg in
-        let value_lb = rtl_expr_val e3 ctx list_lb value_reg in
-        store_lb
-    | _ -> raise (Error "Invalid expression in set"))
 
   | TSeval e ->
       let result_reg = Register.fresh () in
