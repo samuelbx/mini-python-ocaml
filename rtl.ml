@@ -51,15 +51,29 @@ let rec rtl_if e if_stmt else_stmt ctx ld rd l_exit =
   let test_lb = add_to_cfg (Emubranch (Ops.Mjnz, test_reg, if_lb, else_lb)) in
   rtl_expr_val e ctx test_lb test_reg
 
-and rtl_for e stmt ctx ld rd l_exit =
-  (* TODO *)
-  let test_reg = Register.fresh () in
-  let test_lb = Label.fresh () in
-  let eval_lb = rtl_expr_addr e ctx test_lb test_reg in
-  let block_lb = rtl_stmt stmt ctx eval_lb rd l_exit in
-  let test_instr = Emubranch (Ops.Mjnz, test_reg, block_lb, ld) in
-  graph := Label.M.add test_lb test_instr !graph;
-  eval_lb
+and rtl_for e v stmt ctx ld rd l_exit =
+        let r_cmp = Register.fresh () in
+        let r_idx = Register.fresh () in
+        let r_counter = Register.fresh () in
+        let r_one = Register.fresh () in
+        let r_two = Register.fresh () in
+        let r_range = Register.fresh () in
+        let r_size= Register.fresh() in
+        let r_value = var_reg ctx v in
+        let l_incr_counter = Label.fresh () in
+        let l_stmt = rtl_stmt stmt ctx l_incr_counter rd ld in
+        let l_value = my_eloadr r_value r_range 8L r_idx l_stmt in
+        let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_size, r_idx, l_value, ld)) in
+        let l_idx_add = add_to_cfg (Embinop (Ops.Madd, r_two, r_idx, l_cmp)) in
+        let l_idx = add_to_cfg (Embinop (Ops.Mmov, r_idx, r_counter, l_idx_add)) in
+        let l_loadcmp = add_to_cfg (Embinop (Ops.Mmov, r_range, r_cmp, l_idx)) in
+        let l_loadtwo = add_to_cfg (Econst (Cint 2L, r_two, l_loadcmp)) in
+        let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_loadtwo)) in
+        let l_size = rtl_expr_val e ctx l_loadone r_size in 
+        let l_range = rtl_expr_addr e ctx l_size r_range in
+        graph := Label.M.add l_incr_counter (Embinop (Ops.Madd, r_one, r_counter, l_range)) !graph;
+        let l_counter = add_to_cfg (Econst (Cint 0L, r_counter, l_range)) in    
+        l_counter
 
 and rtl_unop u e ctx ld rd =
   match u with
@@ -349,8 +363,7 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
   | TSif (expr, if_stmt, else_stmt) -> rtl_if expr if_stmt else_stmt ctx ld r_ret l_exit
   | TSblock block -> rtl_block block ctx ld r_ret l_exit
   | TSfor (v, expr, stmt) ->
-    raise (Error "(rtl) not implemented")
-    
+        rtl_for  expr v stmt ctx ld r_ret l_exit
   | TSset (e1, e2, e3) -> 
           (match e2 with 
    | TEvar v -> 

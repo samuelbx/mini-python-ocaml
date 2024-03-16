@@ -1,4 +1,3 @@
-print(0)
-print(True)
-print(False)
-print([[1,2,3],[4,5,6]])
+for i in list(range(10)):
+    print(None)
+
