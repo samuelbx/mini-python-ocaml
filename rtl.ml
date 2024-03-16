@@ -250,13 +250,12 @@ and my_print_macro e ctx ld rd =
       let l_antislashn = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_antislashn], ld)) in
       let load_antislashn = add_to_cfg (Econst(Cint 10L, r_antislashn, l_antislashn)) in
 
-      let is_equal_branch reg reg_cmp i l_true l_next =
+      let is_equal_branch reg i l_true l_next =
+        let reg_cmp = Register.fresh () in
         let lb_branch = add_to_cfg (Emubranch (Ops.Mjz, reg_cmp, l_true, l_next)) in
         let op = add_to_cfg (Embinop (Ops.Msub, reg, reg_cmp, lb_branch)) in
         add_to_cfg (Econst(Cint i, reg_cmp, op))
       in
-
-      let r_cmp = Register.fresh () in
 
       (* NoneType *)
       let lbl_0 = 
@@ -271,7 +270,8 @@ and my_print_macro e ctx ld rd =
         let lbl_print = add_to_cfg (Ecall (r_ret_useless, "printf", [r_txt], load_antislashn)) in
         let lbl_false = add_to_cfg(Econst(Cstring "False", r_txt, lbl_print)) in
         let lbl_true = add_to_cfg(Econst(Cstring "True", r_txt, lbl_print)) in
-        is_equal_branch r_val r_cmp 0L lbl_true lbl_false
+        (*is_equal_branch r_val 0L lbl_false lbl_true*)
+        lbl_true
       in
       
       (* Int *)
@@ -327,9 +327,9 @@ and my_print_macro e ctx ld rd =
 
       (*let l_cmp4 = is_equal_branch r_type r_cmp 4L lbl_4 ld in*)
       (*let l_cmp3 = is_equal_branch r_type r_cmp 3L lbl_3 ld in*)
-      let l_cmp2 = is_equal_branch r_type r_cmp 2L lbl_2 ld in
-      let l_cmp1 = is_equal_branch r_type r_cmp 1L lbl_1 l_cmp2 in
-      let l_cmp0 = is_equal_branch r_type r_cmp 0L lbl_0 l_cmp1 in
+      let l_cmp2 = is_equal_branch r_type 2L lbl_2 ld in
+      let l_cmp1 = is_equal_branch r_type 1L lbl_1 l_cmp2 in
+      let l_cmp0 = is_equal_branch r_type 0L lbl_0 l_cmp1 in
       (*let return_zero = add_to_cfg (Econst(Cint 0L, rd, l_cmp0)) in*)
       let val_lb = add_to_cfg (Eload (r_addr, 8, r_val, l_cmp0)) in
       let type_lb = add_to_cfg (Eload (r_addr, 0, r_type, val_lb)) in
