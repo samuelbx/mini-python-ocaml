@@ -213,7 +213,7 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
   | TSfor (v, expr, stmt) ->
       raise (Error "(rtl) not implemented") (* like rtl_while expr stmt ctx dest_lb return_reg exit_lb *)
   | TSset (e1, e2, e3) -> 
-          match e2 with 
+          (match e2 with 
    | TEvar v -> 
         let var_reg =
             if Hashtbl.mem ctx v.v_name then Hashtbl.find ctx v.v_name
@@ -236,7 +236,7 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
         let value_lb = rtl_expr_val e3 ctx base_lb value_reg in
         let store_lb = add_to_cfg (Estore (value_reg, base_reg, offset, value_lb)) in
         store_lb
-    | _ -> raise (Error "Invalid expression in set")
+    | _ -> raise (Error "Invalid expression in set"))
 
   (* | TEassign_field (structExpr, field, assignExpr) ->
      let offset = field.Ttree.field_pos in
