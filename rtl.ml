@@ -377,26 +377,29 @@ and my_add_macro_ r_e1 r_e2 ctx ld rd =
   let l_load_v1 = val_of_addr r_e1 l_load_v2 r_v1 in
   type_of_addr r_e1 l_load_v1 type_reg
 
-and my_print_macro_ r_addr ctx ld rd =
+and add_putchar char ld =
+  let r_ret_useless = Register.fresh () in
+  let r_char = Register.fresh () in
+  let l_call = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_char], ld)) in
+  add_to_cfg (Econst(Cint (Int64.of_int (Char.code char)), r_char, l_call))
+
+and my_print_macro_noend_ r_addr ctx ld rd =
   let r_ret_useless = Register.fresh () in
       let r_type = Register.fresh () in
       let r_val = Register.fresh () in
       let r_antislashn = Register.fresh () in
 
-      let l_antislashn = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_antislashn], ld)) in
-      let load_antislashn = add_to_cfg (Econst(Cint 10L, r_antislashn, l_antislashn)) in
-
       (* NoneType *)
       let lbl_0 = 
         let r_none = Register.fresh () in
-        let lbl_printnone = add_to_cfg (Ecall (r_ret_useless, "printf", [r_none], load_antislashn)) in
+        let lbl_printnone = add_to_cfg (Ecall (r_ret_useless, "printf", [r_none], ld)) in
         add_to_cfg(Econst(Cstring "None", r_none, lbl_printnone))
       in
 
       (* Bool *)
       let lbl_1 = 
         let r_txt = Register.fresh () in
-        let lbl_print = add_to_cfg (Ecall (r_ret_useless, "printf", [r_txt], load_antislashn)) in
+        let lbl_print = add_to_cfg (Ecall (r_ret_useless, "printf", [r_txt], ld)) in
         let lbl_false = add_to_cfg(Econst(Cstring "False", r_txt, lbl_print)) in
         let lbl_true = add_to_cfg(Econst(Cstring "True", r_txt, lbl_print)) in
         is_leq_branch r_val 0L lbl_false lbl_true
@@ -405,7 +408,7 @@ and my_print_macro_ r_addr ctx ld rd =
       (* Int *)
       let lbl_2 = 
         let r_fmt = Register.fresh () in
-        let lbl_print_int = add_to_cfg (Ecall (r_ret_useless, "printf", [r_fmt; r_val], load_antislashn)) in
+        let lbl_print_int = add_to_cfg (Ecall (r_ret_useless, "printf", [r_fmt; r_val], ld)) in
         add_to_cfg(Econst(Cstring "%d", r_fmt, lbl_print_int))
       in
       
@@ -418,13 +421,12 @@ and my_print_macro_ r_addr ctx ld rd =
       let r_two = Register.fresh () in
       let r_val_2 = Register.fresh () in
 
-      (* goto cmp < increment counter < putchar < load char *)
       let l_incr_counter = Label.fresh () in
       let l_putchar = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_char], l_incr_counter)) in
       let load_char = my_eloadr r_char r_addr 8L r_idx l_putchar in
       let l_set_idx_2 = add_to_cfg (Embinop (Ops.Madd, r_two, r_idx, load_char)) in
       let l_set_idx = add_to_cfg (Embinop (Ops.Mmov, r_counter, r_idx, l_set_idx_2)) in
-      let l_cmp = add_to_cfg (Emubranch (Ops.Mjnz, r_val_2, l_set_idx, load_antislashn)) in
+      let l_cmp = add_to_cfg (Emubranch (Ops.Mjnz, r_val_2, l_set_idx, ld)) in
       let l_sub = add_to_cfg (Embinop (Ops.Msub, r_counter, r_val_2, l_cmp)) in
       let l_loadtwo = add_to_cfg (Econst (Cint 2L, r_two, l_sub)) in
       let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_loadtwo)) in
@@ -438,29 +440,42 @@ and my_print_macro_ r_addr ctx ld rd =
       let r_item_addr = Register.fresh () in
       let r_counter = Register.fresh () in
       let r_idx = Register.fresh () in
-      let r_one = Register.fresh () in
-      let r_two = Register.fresh () in
       let r_val_2 = Register.fresh () in
 
       (* goto cmp < increment counter < printf value < load value *)
       let l_incr_counter = Label.fresh () in
-      let l_putchar = add_to_cfg (Ecall (r_ret_useless, "__print__", [r_item_addr], l_incr_counter)) in
+      let lbl_bracket_end = add_putchar ']' ld in
+      let l_print_sep_2 = add_putchar ' ' l_incr_counter in
+      let l_print_sep = add_putchar ',' l_print_sep_2 in
+      let l_cmp = add_to_cfg (Emubranch (Ops.Mjnz, r_val_2, l_print_sep, l_incr_counter)) in
+      let l_precmp = add_to_cfg (Emunop (Ops.Maddi (-1L), r_val_2, l_cmp)) in
+
+      let l_putchar = add_to_cfg (Ecall (r_ret_useless, "__print_no_endline__", [r_item_addr], l_precmp)) in
       let load_item_addr = my_eloadr r_item_addr r_addr 8L r_idx l_putchar in
-      let l_set_idx_2 = add_to_cfg (Embinop (Ops.Madd, r_two, r_idx, load_item_addr)) in
+      let l_set_idx_2 = add_to_cfg (Emunop (Ops.Maddi 2L, r_idx, load_item_addr)) in
       let l_set_idx = add_to_cfg (Embinop (Ops.Mmov, r_counter, r_idx, l_set_idx_2)) in
-      let l_cmp = add_to_cfg (Emubranch (Ops.Mjnz, r_val_2, l_set_idx, load_antislashn)) in
+      let l_cmp = add_to_cfg (Emubranch (Ops.Mjnz, r_val_2, l_set_idx, lbl_bracket_end)) in
       let l_sub = add_to_cfg (Embinop (Ops.Msub, r_counter, r_val_2, l_cmp)) in
-      let l_loadtwo = add_to_cfg (Econst (Cint 2L, r_two, l_sub)) in
-      let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_loadtwo)) in
-      let lbl_addr = add_to_cfg (Eload (r_addr, 8, r_val_2, l_loadone)) in
-      graph := Label.M.add l_incr_counter (Embinop (Ops.Madd, r_one, r_counter, lbl_addr)) !graph;
-      add_to_cfg (Econst(Cint 0L, r_counter, lbl_addr));
+      let lbl_addr = add_to_cfg (Eload (r_addr, 8, r_val_2, l_sub)) in
+      graph := Label.M.add l_incr_counter (Emunop (Ops.Maddi 1L, r_counter, lbl_addr)) !graph;
+      let lbl_bracket_start = add_putchar '[' lbl_addr in
+      add_to_cfg (Econst(Cint 0L, r_counter, lbl_bracket_start));
     in
 
     let l_cmp = compare_type_macro r_type lbl_0 lbl_1 lbl_2 lbl_3 lbl_4 ld in
     let val_lb = add_to_cfg (Eload (r_addr, 8, r_val, l_cmp)) in
     let type_lb = add_to_cfg (Eload (r_addr, 0, r_type, val_lb)) in
     type_lb
+
+and my_print_macro_ r_addr ctx ld rd =
+  let r_ret_useless = Register.fresh () in
+      let r_type = Register.fresh () in
+      let r_val = Register.fresh () in
+      let r_antislashn = Register.fresh () in
+
+      let l_antislashn = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_antislashn], ld)) in
+      let load_antislashn = add_to_cfg (Econst(Cint 10L, r_antislashn, l_antislashn)) in
+    add_to_cfg (Ecall (r_ret_useless, "__print_no_endline__", [r_addr], load_antislashn))
 
 and my_print_macro e ctx ld rd =
     let r_addr = Register.fresh () in
@@ -629,5 +644,6 @@ let rec add_macro_2_vars name body =
 let file (p : tfile) : rtlfile =
   (* TODO: handle global / local context *)
   { funs = [add_macro "__print__" my_print_macro_;
+            add_macro "__print_no_endline__" my_print_macro_noend_;
             add_macro "__len__" my_len_macro_;
             add_macro_2_vars "__add__" my_add_macro_] @ List.map (rtl_def) p }
