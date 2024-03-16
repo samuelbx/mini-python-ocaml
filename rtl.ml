@@ -241,11 +241,10 @@ and rtl_expr_val e ctx ld val_reg =
   let load_val_lb = val_of_addr addr_reg ld val_reg in
   rtl_expr_addr e ctx load_val_lb addr_reg
 
-and my_print_macro e ctx ld rd =
+and my_print_macro_ r_addr ctx ld rd =
   let r_ret_useless = Register.fresh () in
       let r_type = Register.fresh () in
       let r_val = Register.fresh () in
-      let r_addr = Register.fresh () in
       let r_antislashn = Register.fresh () in
 
       let l_antislashn = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_antislashn], ld)) in
@@ -338,7 +337,12 @@ and my_print_macro e ctx ld rd =
       (*let return_zero = add_to_cfg (Econst(Cint 0L, rd, l_cmp0)) in*)
       let val_lb = add_to_cfg (Eload (r_addr, 8, r_val, l_cmp0)) in
       let type_lb = add_to_cfg (Eload (r_addr, 0, r_type, val_lb)) in
-      rtl_expr_addr e ctx type_lb r_addr
+      type_lb
+
+and my_print_macro e ctx ld rd =
+    let r_addr = Register.fresh () in
+    let l_print = my_print_macro_ r_addr ctx ld rd in
+    rtl_expr_addr e ctx l_print r_addr
 
 and rtl_stmt stmt ctx ld r_ret l_exit =
   match stmt with
@@ -382,8 +386,9 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
       let result_reg = Register.fresh () in
       rtl_expr_val e ctx ld result_reg
   | TSprint e ->
-      print_endline "testok";
-      my_print_macro e ctx ld r_ret
+    let r_addr = Register.fresh () in
+    let call_l = add_to_cfg (Ecall (r_ret, "__print__", [r_addr], ld)) in
+    rtl_expr_addr e ctx call_l r_addr
   | TSassign (v, e) ->
       let calc_reg = Register.fresh () in
       let assign_lb = add_to_cfg (Embinop (Ops.Mmov, calc_reg, var_reg ctx v, ld)) in
@@ -450,4 +455,31 @@ let rtl_def ((fn, stmt) : Ast.tdef) =
 
 let file (p : tfile) : rtlfile =
   (* TODO: handle global / local context *)
-  { funs = List.map rtl_def p }
+  let r_arg ctx v =
+    let r = Register.fresh () in
+    Hashtbl.add ctx v.Ast.v_name r;
+    r
+  in
+  let print_register = Register.fresh () in
+  let print_var = {
+    v_name = "__print_var__";
+    v_ofs = 0;
+  } in
+  let ctx = Hashtbl.create 16 in
+  Hashtbl.add ctx print_var.v_name print_register;
+  let r_result = Register.fresh () in
+  let l_exit = Label.fresh () in
+  let entry = my_print_macro_ print_register ctx l_exit r_result in
+  let print_fun =
+    {
+      fun_name = "__print__";
+      fun_formals = [print_register] ;
+      fun_result = r_result;
+      fun_ctx = Register.set_of_list [];
+      fun_entry = entry;
+      fun_exit = l_exit;
+      fun_body = !graph;
+    }
+  in
+  Hashtbl.add function_table print_fun.fun_name print_fun;
+  { funs = [print_fun] @ List.map (rtl_def) p }
