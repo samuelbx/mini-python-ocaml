@@ -22,7 +22,7 @@ let add_to_cfg i =
 let my_malloc size addr_reg l_next =
   let size_reg = Register.fresh () in
   let alloc_lb = add_to_cfg (Ecall (addr_reg, "malloc", [size_reg], l_next)) in
-  let load_size_lb = add_to_cfg (Econst (Cint (Int64.of_int (8*(size+1))), size_reg, alloc_lb)) in
+  let load_size_lb = add_to_cfg (Econst (Cint (Int64.of_int (8*(size))), size_reg, alloc_lb)) in
   load_size_lb
 
 let my_lea r_addr r_base m r_idx l =
