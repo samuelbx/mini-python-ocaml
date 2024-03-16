@@ -490,7 +490,7 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
   | TSreturn expr ->
       let result_reg = Register.fresh () in
       let ret_lb = add_to_cfg (Embinop (Ops.Mmov, result_reg, r_ret, l_exit)) in
-      rtl_expr_val expr ctx ret_lb result_reg
+      rtl_expr_addr expr ctx ret_lb result_reg
   | TSif (expr, if_stmt, else_stmt) -> rtl_if expr if_stmt else_stmt ctx ld r_ret l_exit
   | TSblock block -> rtl_block block ctx ld r_ret l_exit
   | TSfor (v, expr, stmt) ->
