@@ -486,7 +486,6 @@ and my_print_macro e ctx ld rd =
     rtl_expr_addr e ctx l_print r_addr
 
 and rtl_stmt stmt ctx ld r_ret l_exit =
-  let main_stmt =
     match stmt with
     | TSreturn expr ->
         let result_reg = Register.fresh () in
@@ -518,10 +517,6 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
         let calc_reg = Register.fresh () in
         let assign_lb = add_to_cfg (Embinop (Ops.Mmov, calc_reg, var_reg ctx v, ld)) in
         rtl_expr_addr e ctx assign_lb calc_reg
-    in
-    let zero_reg = Register.fresh () in
-    let l_ret_zero = add_to_cfg (Embinop (Ops.Mmov, zero_reg, r_ret, main_stmt)) in
-    add_to_cfg (Econst (Cint 0L, zero_reg, l_ret_zero))
 
 and rtl_stmt_list stmtlist ctx ld (result : Register.t) l_exit =
   match stmtlist with
