@@ -268,8 +268,11 @@ and my_print_macro e ctx ld rd =
         let r_one = Register.fresh () in
         let r_two = Register.fresh () in
         let r_val_2 = Register.fresh () in
+
+        let l_placeholder = Label.fresh () in
+
         (* goto cmp < increment counter < putchar < load char *)
-        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, load_antislashn)) in
+        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, l_placeholder)) in
         let l_putchar = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_char], l_incr_counter)) in
         let load_char = my_eloadr r_char r_addr 8L r_idx l_putchar in
         let l_set_idx_2 = add_to_cfg (Embinop (Ops.Madd, r_two, r_idx, load_char)) in
@@ -278,7 +281,8 @@ and my_print_macro e ctx ld rd =
         let l_loadtwo = add_to_cfg (Econst (Cint 2L, r_two, l_cmp)) in
         let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_loadtwo)) in
         let lbl_addr = add_to_cfg (Eload (r_addr, 8, r_val_2, l_loadone)) in
-        add_to_cfg (Econst(Cint 0L, r_counter, lbl_addr))
+        graph := Label.M.add l_incr_counter (Embinop (Ops.Madd, r_one, r_counter, l_cmp)) !graph;
+        add_to_cfg (Econst(Cint 0L, r_counter, lbl_addr));
       in
 
       (* List *)
@@ -298,7 +302,7 @@ and my_print_macro e ctx ld rd =
         let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, l_set_idx, load_antislashn)) in
         let l_loadtwo = add_to_cfg (Econst (Cint 2L, r_two, l_cmp)) in
         let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_loadtwo)) in
-        add_to_cfg (Econst(Cint 0L, r_counter, l_loadone))
+        add_to_cfg (Econst(Cint 0L, r_counter, l_loadone));
       in
 
       (*let l_cmp4 = is_equal_branch r_type r_cmp 4L lbl_4 ld in*)
