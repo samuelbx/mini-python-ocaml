@@ -254,14 +254,42 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
   | TSeval e ->
       let result_reg = Register.fresh () in
       rtl_expr_val e ctx ld result_reg
-  | TSprint (TEcst (Cint i) as expr) ->
-      let r_ret_printf = Register.fresh() in
-      let r_expr = Register.fresh () in
-      let r_fmt = Register.fresh () in
-      let l_call = add_to_cfg (Ecall (r_ret_printf, "printf", [r_fmt] @ [r_expr], ld)) in
-      let str_fmt =  TEcst (Cstring "%d\n") in
-      let l_fmt = rtl_expr_val str_fmt ctx l_call r_fmt in
-      rtl_expr_val expr ctx l_fmt r_expr;
+  | TSprint e ->
+      let r_ret_useless = Register.fresh () in
+      let r_type = Register.fresh () in
+      let r_val = Register.fresh () in
+      let r_antislashn = Register.fresh () in
+
+      let l_antislashn = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_antislashn], ld)) in
+      let load_antislashn = add_to_cfg (Econst(Cint 10L, r_antislashn, l_antislashn)) in
+
+      (* NoneType *)
+      let lbl_0 = 
+        let r_none = Register.fresh () in
+        let lbl_printnone = add_to_cfg (Ecall (r_ret_useless, "printf", [r_none], load_antislashn)) in
+        add_to_cfg( Econst(Cstring "None", r_none, lbl_printnone))
+      in
+      let lbl_1 = () in
+      let lbl_2 = () in
+      let lbl_3 = () in
+      let lbl_4 = () in
+
+      let r_cmp = Register.fresh () in
+
+      let is_equal_branch reg reg_cmp i l_true l_next =
+        let lb_branch = add_to_cfg (Emubranch (Ops.Mjz, reg_cmp, l_true, l_next)) in
+        let op = add_to_cfg (Embinop (Ops.Msub, reg, reg_cmp, lb_branch)) in
+        add_to_cfg (Econst(Cint i, reg_cmp, op))
+      in
+
+      let l_cmp4 = is_equal_branch r_type r_cmp 4L lbl_4 ld in
+      let l_cmp3 = is_equal_branch r_type r_cmp 3L lbl_3 l_cmp4 in
+      let l_cmp2 = is_equal_branch r_type r_cmp 2L lbl_2 l_cmp3 in
+      let l_cmp1 = is_equal_branch r_type r_cmp 1L lbl_1 l_cmp2 in
+      let l_cmp0 = is_equal_branch r_type r_cmp 0L lbl_0 l_cmp1 in
+      rtl_expr_val_type e ctx l_cmp0 r_val r_type
+
+      
   | TSprint expr ->
       let r_ret_printf = Register.fresh() in
       let r_expr = Register.fresh () in
