@@ -104,6 +104,10 @@ let from_tmp1_to op l = (Embinop (Ops.Mmov, (Ltltree.Reg Register.tmp1), op, l))
 
 let from_tmp2_to op l = (Embinop (Ops.Mmov, (Ltltree.Reg Register.tmp2), op, l))
 
+(* r2 <- n(r1)
+r1=src
+r2=dest   
+*)
 let ltl_i_load colors src_preg srcOffset dest_preg lb =
   let dest_op = lookup colors dest_preg in
   let src_op = lookup colors src_preg in
@@ -146,18 +150,20 @@ let ltl_i_load colors src_preg srcOffset dest_preg lb =
    @param dest_preg dest pseudo-register
    @param destOffset offset to dest_preg
    @param lb next label
+   (* offset(dest_reg) <- src_preg *)  
+   (* r2=dest, r1=src *)  
 *)
 let ltl_i_store colors src_preg dest_preg destOffset lb =
   let dest_op = lookup colors dest_preg in
   let src_op = lookup colors src_preg in
   begin match src_op, dest_op with
-  | Reg r1, Reg r2 -> Estore (r2, r1, destOffset, lb)
-  | Reg r1, Spilled _ ->
-    to_tmp2 dest_op (generate (Estore (Register.tmp2, r1, destOffset, lb)))
-  | Spilled _, Reg r2 ->
-    to_tmp1 src_op (generate (Estore (r2, Register.tmp1, destOffset, lb)))
-  | Spilled _, Spilled _ ->
-    let l' = generate (Estore (Register.tmp2, Register.tmp1, destOffset, lb)) in
+  | Reg r1, Reg r2 -> Estore (r1, r2, destOffset, lb) (* offset(r2) <- r1 *)
+  | Reg r1, Spilled _ ->(* offset(tmp2) <- r1 *)
+    to_tmp2 dest_op (generate (Estore (r1, Register.tmp2, destOffset, lb)))
+  | Spilled _, Reg r2 ->(* offset(r2) <- tmp1*)
+    to_tmp1 src_op (generate (Estore (Register.tmp1, r2, destOffset, lb)))
+  | Spilled _, Spilled _ ->(* offset(tmp2) <- tmp1*)
+    let l' = generate (Estore (Register.tmp1, Register.tmp2, destOffset, lb)) in
     to_tmp1 src_op (generate (to_tmp2 dest_op l'))
   end
 
