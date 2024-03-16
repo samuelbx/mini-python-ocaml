@@ -6,11 +6,11 @@ main:
 	addq $-40, %rsp
 	movq $16, %rdi
 	call malloc
-	movq %rax, %r9
-	movq $1, %r8
-	movq $1, %r10
-	movq %r8, 0(%r9)
-	movq %r10, 8(%r9)
+	movq %rax, %r8
+	movq $0, %r10
+	movq %r10, 0(%r8)
+	movq %r10, 8(%r8)
+	movq %r8, -8(%rbp)
 	movq -8(%rbp), %r15
 	movq 0(%r15), %r8
 	movq -8(%rbp), %r15
