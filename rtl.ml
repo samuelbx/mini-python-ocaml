@@ -245,6 +245,7 @@ and my_print_macro e ctx ld rd =
   let r_ret_useless = Register.fresh () in
       let r_type = Register.fresh () in
       let r_val = Register.fresh () in
+      let r_addr = Register.fresh () in
       let r_antislashn = Register.fresh () in
 
       let l_antislashn = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_antislashn], ld)) in
@@ -278,53 +279,52 @@ and my_print_macro e ctx ld rd =
       in
       
       (* String *)
-      (*let lbl_3 =
-        let r_char = Register.fresh () in
-        let r_counter = Register.fresh () in
-        let r_idx = Register.fresh () in
-        let r_one = Register.fresh () in
-        let r_two = Register.fresh () in
-        let r_val_2 = Register.fresh () in
+      let lbl_3 =
+      let r_char = Register.fresh () in
+      let r_counter = Register.fresh () in
+      let r_idx = Register.fresh () in
+      let r_one = Register.fresh () in
+      let r_two = Register.fresh () in
+      let r_val_2 = Register.fresh () in
 
-        (* goto cmp < increment counter < putchar < load char *)
-        let l_incr_counter = Label.fresh () in
-        let l_putchar = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_char], l_incr_counter)) in
-        let load_char = my_eloadr r_char r_addr 8L r_idx l_putchar in
-        let l_set_idx_2 = add_to_cfg (Embinop (Ops.Madd, r_two, r_idx, load_char)) in
-        let l_set_idx = add_to_cfg (Embinop (Ops.Mmov, r_counter, r_idx, l_set_idx_2)) in
-        let l_cmp = add_to_cfg (Emubranch (Ops.Mjnz, r_val_2, l_set_idx, load_antislashn)) in
-        let l_sub = add_to_cfg (Embinop (Ops.Msub, r_counter, r_val_2, l_cmp)) in
-        let l_loadtwo = add_to_cfg (Econst (Cint 2L, r_two, l_sub)) in
-        let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_loadtwo)) in
-        let lbl_addr = add_to_cfg (Eload (r_addr, 8, r_val_2, l_loadone)) in
-        graph := Label.M.add l_incr_counter (Embinop (Ops.Madd, r_one, r_counter, lbl_addr)) !graph;
-        add_to_cfg (Econst(Cint 0L, r_counter, lbl_addr));
-      in
+      (* goto cmp < increment counter < putchar < load char *)
+      let l_incr_counter = Label.fresh () in
+      let l_putchar = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_char], l_incr_counter)) in
+      let load_char = my_eloadr r_char r_addr 8L r_idx l_putchar in
+      let l_set_idx_2 = add_to_cfg (Embinop (Ops.Madd, r_two, r_idx, load_char)) in
+      let l_set_idx = add_to_cfg (Embinop (Ops.Mmov, r_counter, r_idx, l_set_idx_2)) in
+      let l_cmp = add_to_cfg (Emubranch (Ops.Mjnz, r_val_2, l_set_idx, load_antislashn)) in
+      let l_sub = add_to_cfg (Embinop (Ops.Msub, r_counter, r_val_2, l_cmp)) in
+      let l_loadtwo = add_to_cfg (Econst (Cint 2L, r_two, l_sub)) in
+      let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_loadtwo)) in
+      let lbl_addr = add_to_cfg (Eload (r_addr, 8, r_val_2, l_loadone)) in
+      graph := Label.M.add l_incr_counter (Embinop (Ops.Madd, r_one, r_counter, lbl_addr)) !graph;
+      add_to_cfg (Econst(Cint 0L, r_counter, lbl_addr));
+    in
 
-      (* List *)
-      let lbl_4 =
-        let r_elem_addr = Register.fresh () in
-        let r_counter = Register.fresh () in
-        let r_one = Register.fresh () in
-        let r_two = Register.fresh () in
-        let r_idx = Register.fresh () in
-        let r_eight = Register.fresh () in
-        (* goto cmp < increment counter < putchar < load char *)
-        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, load_antislashn)) in
-        let l_putchar = add_to_cfg (Ecall (r_ret_useless, "__print__", [r_elem_addr], l_incr_counter)) in
-        let l_lea = my_lea r_elem_addr r_addr 8L r_counter l_putchar in
-        let l_set_idx_2 = add_to_cfg (Embinop (Ops.Madd, r_two, r_idx, l_lea)) in
-        let l_set_idx = add_to_cfg (Embinop (Ops.Mmov, r_counter, r_idx, l_set_idx_2)) in
-        let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, l_set_idx, load_antislashn)) in
-        let l_loadtwo = add_to_cfg (Econst (Cint 2L, r_two, l_cmp)) in
-        let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_loadtwo)) in
-        add_to_cfg (Econst(Cint 0L, r_counter, l_loadone));
-      in*)
+    (* List *)
+    let lbl_4 =
+      let r_elem_addr = Register.fresh () in
+      let r_counter = Register.fresh () in
+      let r_one = Register.fresh () in
+      let r_two = Register.fresh () in
+      let r_idx = Register.fresh () in
+      let r_eight = Register.fresh () in
+      (* goto cmp < increment counter < putchar < load char *)
+      let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, load_antislashn)) in
+      let l_putchar = add_to_cfg (Ecall (r_ret_useless, "__print__", [r_elem_addr], l_incr_counter)) in
+      let l_lea = my_lea r_elem_addr r_addr 8L r_counter l_putchar in
+      let l_set_idx_2 = add_to_cfg (Embinop (Ops.Madd, r_two, r_idx, l_lea)) in
+      let l_set_idx = add_to_cfg (Embinop (Ops.Mmov, r_counter, r_idx, l_set_idx_2)) in
+      let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, l_set_idx, load_antislashn)) in
+      let l_loadtwo = add_to_cfg (Econst (Cint 2L, r_two, l_cmp)) in
+      let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_loadtwo)) in
+      add_to_cfg (Econst(Cint 0L, r_counter, l_loadone));
+    in
 
       (*let l_cmp4 = is_equal_branch r_type r_cmp 4L lbl_4 ld in*)
-      (*let l_cmp3 = is_equal_branch r_type r_cmp 3L lbl_3 ld in*)
-      let r_addr = Register.fresh () in
-      let l_cmp2 = is_leq_branch r_type 2L lbl_2 ld in
+      let l_cmp3 = is_leq_branch r_type 3L lbl_3 ld in
+      let l_cmp2 = is_leq_branch r_type 2L lbl_2 l_cmp3 in
       let l_cmp1 = is_leq_branch r_type 1L lbl_1 l_cmp2 in
       let l_cmp0 = is_leq_branch r_type 0L lbl_0 l_cmp1 in
       (*let return_zero = add_to_cfg (Econst(Cint 0L, rd, l_cmp0)) in*)
