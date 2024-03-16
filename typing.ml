@@ -86,7 +86,7 @@ let rec type_expr ctx = function
           | _ -> error ~loc:fn.loc "(typing) list must be called on range()")
       | "range" -> error ~loc:fn.loc "(typing) range cannot be used outside of list()"
       | "len" -> (
-          let new_fn = { fn_name = "len"; fn_params = [ { v_name = "x"; v_ofs = 0 } ] } in
+          let new_fn = { fn_name = "__len__"; fn_params = [ { v_name = "__len__var"; v_ofs = 0 } ] } in
           match args with
           | [ c ] -> TEcall (new_fn, [ type_expr ctx c ])
           | _ -> error ~loc:fn.loc "(typing) len expected exactly 1 argument(s), got %i" (List.length args))

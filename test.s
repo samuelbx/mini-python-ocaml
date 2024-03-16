@@ -148,7 +148,7 @@ main:
 	movq -8(%rbp), %r11
 	movq %r10, 32(%r11)
 	movq -8(%rbp), %rdi
-	call len
+	call __len__
 	movq %rax, %rdi
 	call __print__
 	movq $16, %rdi
