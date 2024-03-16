@@ -128,8 +128,6 @@ and instr_translate = function
 
 and add_ints b r_v1 r_v2 ctx ld rd =
   let instr = instr_translate b in
-  let r_v1 = Register.fresh () in
-  let r_v2 = Register.fresh () in
   let l_cpy_result = alloc_int r_v1 rd ld in
   let l_do_op = add_to_cfg (Embinop (instr, r_v2, r_v1, l_cpy_result)) in
   l_do_op
