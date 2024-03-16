@@ -247,7 +247,6 @@ and rtl_expr_addr e ctx ld rd =
       let alloc_lb = my_malloc ((len_list+2)) addr_reg type_lb in
       alloc_lb
   | TEvar v ->
-    print_endline "eror 2";
     add_to_cfg (Embinop (Ops.Mmov, var_reg ctx v, rd, ld))
   | TEbinop (binop, e1, e2) -> rtl_binop binop e1 e2 ctx ld rd
   | TEunop (unop, expr) -> rtl_unop unop expr ctx ld rd
@@ -481,7 +480,6 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
   | TSfor (v, expr, stmt) ->
         rtl_for  expr v stmt ctx ld r_ret l_exit
   | TSset (e1, e2, e3) -> 
-    print_endline "eror 3";
         let index_reg = Register.fresh () in
         let list_reg = Register.fresh () in
         let value_reg = Register.fresh () in
