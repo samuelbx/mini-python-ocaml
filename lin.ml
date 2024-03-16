@@ -98,7 +98,7 @@ let convert_binop_1 = function
 | _ -> raise (Error "convert binop 1 pas content")
 
 let treat_binop binop op1 op2 l =
-  match binop with  
+  match binop with
   | Mmov 
   | Madd 
   | Msub 
@@ -213,8 +213,12 @@ and instru g l = function
   | Ltltree.Egoto (lb) -> emit_only_l l; lin g lb
   | Ltltree.Eload (op1 ,n , op2, lb) -> 
       emit l (movq (X86_64.ind ~ofs:n (registerq op1)) (reg (registerq op2))); lin g lb
-  | Ltltree.Estore (op1, op2, n, lb) ->
+  | Ltltree.EloadR (op2, n, op1, m, op_idx, l) -> (* add_to_cfg (EloadR(r_char, 0, r_addr, 8, r_counter, l_putchar)) in (* 0+ r_addr+8*r_counter *) *)
+      emit l (movq (X86_64.ind ~ofs:n ~index:op_idx ~scale:m (registerq op1)) (reg (registerq op2))); lin g lb
+  | Ltltree.Estore (op1, op2, n, lb) -> (* (value_reg, r_ret, offset, ld))*)
       emit l (movq (reg (registerq op1)) (X86_64.ind ~ofs:n (registerq op2))); lin g lb
+  | Ltltree.EstoreR (op2, n, op1, op_idx, m, l) ->  (* (value_reg, 0, list_reg, index_reg, 8, ld)) *)
+      emit l (movq (X86_64.ind ~ofs:n ~index:op_idx ~scale:m (registerq op1)) (reg (registerq op2))); lin g lb
   | Ltltree.Ereturn -> emit l ret
   | Ltltree.Emunop (unop, op, lb) -> treat_unop unop op l; lin g lb
   | Ltltree.Embinop (binop, op1, op2, lb) -> treat_binop binop op1 op2 l; lin g lb 

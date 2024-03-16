@@ -259,13 +259,16 @@ and my_print_macro e ctx ld rd =
         let r_elem_addr = Register.fresh () in
         let r_counter = Register.fresh () in
         let r_one = Register.fresh () in
+        let r_eight = Register.fresh () in
         (* goto cmp < increment counter < putchar < load char *)
         let lbl_toreplace = Label.fresh () in
         let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, lbl_toreplace)) in
         let l_putchar = add_to_cfg (Ecall (r_ret_useless, "__print__", [r_elem_addr], l_incr_counter)) in
-        let load_addr = add_to_cfg (Emquadop (Ops.Mlea, 0, r_addr, r_elem_addr, 8, l_putchar)) in (* 0+ r_addr+8*r_counter *)
-        let l_move = add_to_cfg (Embinop (Ops.Mmov, r_counter, r_elem_addr, load_addr)) in
-        let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, load_addr, l_antislashn)) in
+        let l_add = add_to_cfg (Embinop (Ops.Madd, r_addr, r_elem_addr, l_putchar)) in
+        let l_mul = add_to_cfg (Embinop (Ops.Mmul, r_eight, r_elem_addr, l_add)) in
+        let l_eight = add_to_cfg (Econst(Cint 8L, r_eight, l_mul)) in
+        let l_move = add_to_cfg (Embinop (Ops.Mmov, r_counter, r_elem_addr, l_eight)) in
+        let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, l_move, l_antislashn)) in
         let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_cmp)) in
         add_to_cfg (Econst(Cint 0L, r_counter, l_loadone))
       in
