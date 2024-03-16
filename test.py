@@ -1,2 +1,2 @@
 x = "ok"
-print(len(x))
+print(x)
