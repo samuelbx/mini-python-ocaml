@@ -271,7 +271,37 @@ and rtl_expr_addr e ctx ld rd =
     let type_lb = add_to_cfg (Econst (Cint 4L, type_reg, val_lb)) in
     let alloc_lb = my_malloc (len_list+2) rd type_lb in
     alloc_lb
-  | TErange e -> raise (Error "(rtl) not implemented")
+      | TErange e -> 
+        let addr_reg = Register.fresh () in
+        let r_int = Register.fresh () in
+        let r_sub = Register.fresh () in
+        let r_type = Register.fresh () in
+        let r_len_shifted = Register.fresh () in
+        let r_size = Register.fresh () in
+        let r_idx = Register.fresh () in
+        let r_counter = Register.fresh () in
+        let r_len = Register.fresh() in
+        let l_incr_counter = Label.fresh () in
+        let l_final = add_to_cfg (Embinop (Ops.Mmov, addr_reg, rd, ld)) in 
+        let l_value = my_estorer r_int addr_reg 8L r_idx l_incr_counter in
+        let l_int_allocate = alloc_int r_counter r_int l_value in
+        let l_cmp = add_to_cfg (Emubranch (Ops.Mjnz, r_sub, l_int_allocate, l_final)) in
+        let l_sub = add_to_cfg (Embinop (Ops.Msub, r_len_shifted, r_sub, l_cmp)) in 
+        let l_load_sub = add_to_cfg (Embinop (Ops.Mmov, r_idx, r_sub, l_sub)) in 
+        let l_idx_add = add_to_cfg (Emunop (Ops.Maddi 2L, r_idx, l_load_sub)) in
+        let l_idx = add_to_cfg (Embinop (Ops.Mmov, r_counter, r_idx, l_idx_add)) in 
+        graph := Label.M.add l_incr_counter (Emunop (Maddi 1L, r_counter, l_idx)) !graph;
+        let l_counter = add_to_cfg (Econst (Cint 0L, r_counter, l_idx)) in    
+        let store_len = add_to_cfg (Estore (r_len, addr_reg, 8, l_counter)) in
+        let store_type = add_to_cfg (Estore (r_type, addr_reg, 0, store_len)) in
+        let type_lb = add_to_cfg (Econst (Cint 4L, r_type, store_type)) in
+        let alloc_lb = add_to_cfg (Ecall (addr_reg, "malloc", [r_size], type_lb)) in
+        let size_lb = add_to_cfg (Embinop (Ops.Mmul, r_len_shifted, r_size,  alloc_lb)) in
+        let load_size = add_to_cfg (Econst (Cint 8L, r_size, size_lb)) in
+        let l_len_shifted = add_to_cfg (Emunop (Ops.Maddi 2L, r_len_shifted, load_size)) in
+        let l_len_bis = add_to_cfg (Embinop (Ops.Mmov, r_len, r_len_shifted, l_len_shifted)) in
+        let l_len = rtl_expr_val e ctx l_len_bis r_len in 
+        l_len
   | TEget (e1, e2) ->
       let r_addr_e1 = Register.fresh () in
       let r_val_e2 = Register.fresh () in
