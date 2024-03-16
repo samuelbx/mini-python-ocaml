@@ -256,7 +256,9 @@ and my_print_macro e ctx ld rd =
       (* Int *)
       let lbl_2 = 
         let r_fmt = Register.fresh () in
-        let lbl_print_int = add_to_cfg (Ecall (r_ret_useless, "printf", [r_fmt; r_val], load_antislashn)) in
+        let r_val_2 = Register.fresh () in
+        let lbl_print_int = add_to_cfg (Ecall (r_ret_useless, "printf", [r_fmt; r_val_2], load_antislashn)) in
+        let lbl_addr = add_to_cfg (Eload (r_addr, 8, r_val_2, lbl_print_int)) in
         add_to_cfg(Econst(Cstring "%d", r_fmt, lbl_print_int))
       in
       
