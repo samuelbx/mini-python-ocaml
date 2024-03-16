@@ -8,7 +8,7 @@ main:
 	call malloc
 	movq %rax, %r10
 	movq $2, %r9
-	movq $0, %r8
+	movq $87, %r8
 	movq %r9, 0(%r10)
 	movq %r8, 8(%r10)
 	movq 0(%r10), %r9
