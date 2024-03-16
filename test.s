@@ -17,6 +17,7 @@ main:
 	movq 0(%r11), %r8
 	movq %r11, %r11
 	movq 8(%r11), %r9
+	movq $0, %rax
 	movq $0, %r10
 	subq %r8, %r10
 	testq %r10, %r10
