@@ -192,8 +192,7 @@ and val_of_addr addr_reg ld val_reg =
   (* fills type_reg and val_reg with type (between 0 and 4) and value (or len for string/list) *)
   add_to_cfg (Eload (addr_reg, 8, val_reg, ld))
   
-and rtl_expr_val_type e ctx ld type_reg val_reg =
-  let addr_reg = Register.fresh () in
+and rtl_expr_val_type_addr e ctx ld type_reg val_reg addr_reg =
   let load_val_lb = val_type_of_addr addr_reg ld type_reg val_reg in
   rtl_expr_addr e ctx load_val_lb addr_reg
 
@@ -201,6 +200,85 @@ and rtl_expr_val e ctx ld val_reg =
   let addr_reg = Register.fresh () in
   let load_val_lb = val_of_addr addr_reg ld val_reg in
   rtl_expr_addr e ctx load_val_lb addr_reg
+
+and my_print_macro e ctx ld rd =
+  let r_ret_useless = Register.fresh () in
+      let r_type = Register.fresh () in
+      let r_val = Register.fresh () in
+      let r_addr = Register.fresh () in
+      let r_antislashn = Register.fresh () in
+
+      let l_antislashn = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_antislashn], ld)) in
+      let load_antislashn = add_to_cfg (Econst(Cint 10L, r_antislashn, l_antislashn)) in
+
+      let is_equal_branch reg reg_cmp i l_true l_next =
+        let lb_branch = add_to_cfg (Emubranch (Ops.Mjz, reg_cmp, l_true, l_next)) in
+        let op = add_to_cfg (Embinop (Ops.Msub, reg, reg_cmp, lb_branch)) in
+        add_to_cfg (Econst(Cint i, reg_cmp, op))
+      in
+
+      let r_cmp = Register.fresh () in
+
+      (* NoneType *)
+      let lbl_0 = 
+        let r_none = Register.fresh () in
+        let lbl_printnone = add_to_cfg (Ecall (r_ret_useless, "printf", [r_none], load_antislashn)) in
+        add_to_cfg(Econst(Cstring "None", r_none, lbl_printnone))
+      in
+
+      (* Bool *)
+      let lbl_1 = 
+        let r_txt = Register.fresh () in
+        let lbl_print = add_to_cfg (Ecall (r_ret_useless, "printf", [r_txt], load_antislashn)) in
+        let lbl_false = add_to_cfg(Econst(Cstring "False", r_txt, lbl_print)) in
+        let lbl_true = add_to_cfg(Econst(Cstring "True", r_txt, lbl_print)) in
+        is_equal_branch r_val r_cmp 0L lbl_true lbl_false
+      in
+      
+      (* Int *)
+      let lbl_2 = 
+        let r_fmt = Register.fresh () in
+        let lbl_print_int = add_to_cfg (Ecall (r_ret_useless, "printf", [r_fmt; r_val], load_antislashn)) in
+        add_to_cfg(Econst(Cstring "%d", r_fmt, lbl_print_int))
+      in
+      
+      (* String *)
+      let lbl_3 =
+        let r_char = Register.fresh () in
+        let r_counter = Register.fresh () in
+        let r_one = Register.fresh () in
+        (* goto cmp < increment counter < putchar < load char *)
+        let lbl_toreplace = Label.fresh () in
+        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, lbl_toreplace)) in
+        let l_putchar = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_char], l_incr_counter)) in
+        let load_char = add_to_cfg (EloadR(r_char, 0L, r_addr, 8L, r_counter, l_putchar)) in (* 0+ r_addr+8*r_counter *)
+        let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, load_char, l_antislashn)) in
+        let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_cmp)) in
+        add_to_cfg (Econst(Cint 0L, r_counter, l_loadone))
+      in
+
+      (* List *)
+      let lbl_4 =
+        let r_elem_addr = Register.fresh () in
+        let r_counter = Register.fresh () in
+        let r_one = Register.fresh () in
+        (* goto cmp < increment counter < putchar < load char *)
+        let lbl_toreplace = Label.fresh () in
+        let l_incr_counter = add_to_cfg (Embinop (Ops.Madd, r_one, r_counter, lbl_toreplace)) in
+        let l_putchar = add_to_cfg (Ecall (r_ret_useless, "__print__", [r_elem_addr], l_incr_counter)) in
+        let load_addr = add_to_cfg (Emquadop (Ops.Mlea, 0, r_addr, r_elem_addr, 8, l_putchar)) in (* 0+ r_addr+8*r_counter *)
+        let l_move = add_to_cfg (Embinop (Ops.Mmov, r_counter, r_elem_addr, load_addr)) in
+        let l_cmp = add_to_cfg (Embbranch (Ops.Mjl, r_counter, r_val, load_addr, l_antislashn)) in
+        let l_loadone = add_to_cfg (Econst (Cint 1L, r_one, l_cmp)) in
+        add_to_cfg (Econst(Cint 0L, r_counter, l_loadone))
+      in
+
+      let l_cmp4 = is_equal_branch r_type r_cmp 4L lbl_4 ld in
+      let l_cmp3 = is_equal_branch r_type r_cmp 3L lbl_3 l_cmp4 in
+      let l_cmp2 = is_equal_branch r_type r_cmp 2L lbl_2 l_cmp3 in
+      let l_cmp1 = is_equal_branch r_type r_cmp 1L lbl_1 l_cmp2 in
+      let l_cmp0 = is_equal_branch r_type r_cmp 0L lbl_0 l_cmp1 in
+      rtl_expr_val_type_addr e ctx l_cmp0 r_val r_type r_addr
 
 and rtl_stmt stmt ctx ld r_ret l_exit =
   match stmt with
@@ -238,56 +316,11 @@ and rtl_stmt stmt ctx ld r_ret l_exit =
         store_lb
     | _ -> raise (Error "Invalid expression in set"))
 
-  (* | TEassign_field (structExpr, field, assignExpr) ->
-     let offset = field.Ttree.field_pos in
-     let struct_reg = Register.fresh() in
-     let assign_reg = Register.fresh() in
-     (* copy assigned value as return value *)
-     let return_lb = generate (Embinop (Ops.Mmov, assign_reg, rd, ld)) in
-     (* assign value to field  - offset is (index of field) * (size of a field = 8 bytes) *)
-     let access_lb = generate (Estore (assign_reg, struct_reg, 8*offset, return_lb)) in
-     (* compute struct pointer *)
-     let calcStruct_lb = rtl_expr structExpr ctx access_lb struct_reg in
-     (* compute assigned expression *)
-     let calcAssign_lb = rtl_expr assignExpr ctx calcStruct_lb assign_reg in
-     calcAssign_lb *)
   | TSeval e ->
       let result_reg = Register.fresh () in
       rtl_expr_val e ctx ld result_reg
   | TSprint e ->
-      let r_ret_useless = Register.fresh () in
-      let r_type = Register.fresh () in
-      let r_val = Register.fresh () in
-      let r_antislashn = Register.fresh () in
-
-      let l_antislashn = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_antislashn], ld)) in
-      let load_antislashn = add_to_cfg (Econst(Cint 10L, r_antislashn, l_antislashn)) in
-
-      (* NoneType *)
-      let lbl_0 = 
-        let r_none = Register.fresh () in
-        let lbl_printnone = add_to_cfg (Ecall (r_ret_useless, "printf", [r_none], load_antislashn)) in
-        add_to_cfg( Econst(Cstring "None", r_none, lbl_printnone))
-      in
-      let lbl_1 = () in
-      let lbl_2 = () in
-      let lbl_3 = () in
-      let lbl_4 = () in
-
-      let r_cmp = Register.fresh () in
-
-      let is_equal_branch reg reg_cmp i l_true l_next =
-        let lb_branch = add_to_cfg (Emubranch (Ops.Mjz, reg_cmp, l_true, l_next)) in
-        let op = add_to_cfg (Embinop (Ops.Msub, reg, reg_cmp, lb_branch)) in
-        add_to_cfg (Econst(Cint i, reg_cmp, op))
-      in
-
-      let l_cmp4 = is_equal_branch r_type r_cmp 4L lbl_4 ld in
-      let l_cmp3 = is_equal_branch r_type r_cmp 3L lbl_3 l_cmp4 in
-      let l_cmp2 = is_equal_branch r_type r_cmp 2L lbl_2 l_cmp3 in
-      let l_cmp1 = is_equal_branch r_type r_cmp 1L lbl_1 l_cmp2 in
-      let l_cmp0 = is_equal_branch r_type r_cmp 0L lbl_0 l_cmp1 in
-      rtl_expr_val_type e ctx l_cmp0 r_val r_type
+      my_print_macro e ctx ld r_ret
 
       
   | TSprint expr ->

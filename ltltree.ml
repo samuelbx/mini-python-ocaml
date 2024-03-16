@@ -26,6 +26,7 @@ type instr =
   | Econst of Ast.constant * operand * label
   | Emunop of munop * operand * label
   | Embinop of mbinop * operand * operand * label
+  | Emquadop of mquadop * int * operand * operand * int * label
   | Emubranch of mubranch * operand * label * label
   | Embbranch of mbbranch * operand * operand * label * label
   | Epush of operand * label
