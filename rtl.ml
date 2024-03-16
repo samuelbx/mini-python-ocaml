@@ -448,9 +448,12 @@ and my_print_macro_noend_ r_addr ctx ld rd =
       let l_print_sep_2 = add_putchar ' ' l_incr_counter in
       let l_print_sep = add_putchar ',' l_print_sep_2 in
       let l_cmp_2 = add_to_cfg (Emubranch (Ops.Mjnz, r_val_2, l_print_sep, l_incr_counter)) in
-      let l_precmp = add_to_cfg (Emunop (Ops.Maddi (-1L), r_val_2, l_cmp_2)) in
 
-      let l_putchar = add_to_cfg (Ecall (r_ret_useless, "__print_no_endline__", [r_item_addr], l_precmp)) in
+      let l_precmp = add_to_cfg (Emunop (Ops.Maddi (-1L), r_val_2, l_cmp_2)) in
+      let l_sub_2 = add_to_cfg (Embinop (Ops.Msub, r_counter, r_val_2, l_precmp)) in
+      let lbl_addr_2 = add_to_cfg (Eload (r_addr, 8, r_val_2, l_sub_2)) in
+
+      let l_putchar = add_to_cfg (Ecall (r_ret_useless, "__print_no_endline__", [r_item_addr], lbl_addr_2)) in
       let load_item_addr = my_eloadr r_item_addr r_addr 8L r_idx l_putchar in
       let l_set_idx_2 = add_to_cfg (Emunop (Ops.Maddi 2L, r_idx, load_item_addr)) in
       let l_set_idx = add_to_cfg (Embinop (Ops.Mmov, r_counter, r_idx, l_set_idx_2)) in

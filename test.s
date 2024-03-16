@@ -3,20 +3,20 @@
 __print__:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-112, %rsp
+	addq $-104, %rsp
 	call __print_no_endline__
 	movq %rax, %r10
 	movq $10, %rdi
 	call putchar
 	movq %rax, %r10
-	movq -112(%rbp), %rax
+	movq -104(%rbp), %rax
 	movq %rbp, %rsp
 	popq %rbp
 	ret
 __print_no_endline__:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-112, %rsp
+	addq $-104, %rsp
 	movq %rdi, -64(%rbp)
 	movq -64(%rbp), %r15
 	movq 0(%r15), %r10
@@ -31,31 +31,28 @@ __print_no_endline__:
 	cmpq $3, %r10
 	jle L111
 	cmpq $4, %r10
-	jle L135
+	jle L137
 L87:
 	movq -72(%rbp), %rax
 	movq %rbp, %rsp
 	popq %rbp
 	ret
-L135:
+L137:
 	movq $0, -96(%rbp)
 	movq $91, %rdi
 	call putchar
 	movq %rax, %r10
-L132:
+L134:
 	movq -64(%rbp), %r15
-	movq 8(%r15), %r11
-	movq %r11, -104(%rbp)
-	movq -104(%rbp), %r15
-	subq -96(%rbp), %r15
-	movq %r15, -104(%rbp)
-	testq -104(%rbp), -104(%rbp)
-	jnz L129
+	movq 8(%r15), %r10
+	subq -96(%rbp), %r10
+	testq %r10, %r10
+	jnz L131
 	movq $93, %rdi
 	call putchar
 	movq %rax, %r10
 	jmp L87
-L129:
+L131:
 	movq -96(%rbp), %r10
 	addq $2, %r10
 	movq $8, %r8
@@ -64,12 +61,15 @@ L129:
 	movq 0(%r10), %rdi
 	call __print_no_endline__
 	movq %rax, %r10
-	decq -104(%rbp)
-	testq -104(%rbp), -104(%rbp)
+	movq -64(%rbp), %r15
+	movq 8(%r15), %r10
+	subq -96(%rbp), %r10
+	decq %r10
+	testq %r10, %r10
 	jnz L118
 L112:
 	incq -96(%rbp)
-	jmp L132
+	jmp L134
 L118:
 	movq $44, %rdi
 	call putchar
@@ -127,7 +127,7 @@ L89:
 __len__:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-112, %rsp
+	addq $-104, %rsp
 	movq %rdi, %r10
 	movq 8(%r10), %r15
 	movq %r15, -56(%rbp)
@@ -143,7 +143,7 @@ __len__:
 __add__:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-112, %rsp
+	addq $-104, %rsp
 	movq %rsi, -16(%rbp)
 	movq %rdi, -8(%rbp)
 	movq -8(%rbp), %r15
@@ -233,7 +233,7 @@ L33:
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	addq $-112, %rsp
+	addq $-104, %rsp
 	movq $40, %rdi
 	call malloc
 	movq %rax, %rdi
