@@ -86,7 +86,6 @@ and rtl_unop u e ctx ld rd =
       rtl_expr_val e ctx r_result rd
 
 and alloc_number type_i pre_val_reg rd ld =
-  let val_reg = Register.fresh () in
   let type_reg = Register.fresh () in
   let addr_reg = Register.fresh () in
   let l_move = add_to_cfg (Embinop (Ops.Mmov, addr_reg, rd, ld)) in
@@ -157,7 +156,7 @@ and rtl_binop b e1 e2 ctx ld rd =
     let r_addr2 = Register.fresh () in
     let l_call = add_to_cfg (Ecall (rd, "__add__", [r_addr1; r_addr2], ld)) in
     let l_load_2 = rtl_expr_addr e2 ctx l_call r_addr2 in
-    let l_load_1 = rtl_expr_addr e1 ctx l_call r_addr2 in
+    let l_load_1 = rtl_expr_addr e1 ctx l_load_2 r_addr2 in
     l_load_1
   
   | Band ->
@@ -362,7 +361,7 @@ and my_add_macro_ r_e1 r_e2 ctx ld rd =
     let final_addr_reg = Register.fresh () in
     let cpy_string_2 = cpy_block r_e2 final_addr_reg 2L r_v2 ld in
     let add_size = add_to_cfg (Embinop (Ops.Madd, r_v1, final_addr_reg, cpy_string_2)) in
-    let cpy_string_1 = cpy_block r_e1 final_addr_reg 2L r_v1 cpy_string_2 in
+    let cpy_string_1 = cpy_block r_e1 final_addr_reg 2L r_v1 add_size in
     let l_alloc = my_malloc_reg r_v2 final_addr_reg cpy_string_1 in
     add_to_cfg (Embinop (Ops.Madd, r_v1, r_v2, l_alloc))
   in
@@ -387,7 +386,6 @@ and my_print_macro_noend_ r_addr ctx ld rd =
   let r_ret_useless = Register.fresh () in
       let r_type = Register.fresh () in
       let r_val = Register.fresh () in
-      let r_antislashn = Register.fresh () in
 
       (* NoneType *)
       let lbl_0 = 
@@ -472,8 +470,6 @@ and my_print_macro_noend_ r_addr ctx ld rd =
 
 and my_print_macro_ r_addr ctx ld rd =
   let r_ret_useless = Register.fresh () in
-      let r_type = Register.fresh () in
-      let r_val = Register.fresh () in
       let r_antislashn = Register.fresh () in
 
       let l_antislashn = add_to_cfg (Ecall (r_ret_useless, "putchar", [r_antislashn], ld)) in
@@ -578,11 +574,6 @@ let rtl_def ((fn, stmt) : Ast.tdef) =
   fun_descr
 
 let rec add_macro name body =
-  let r_arg ctx v =
-    let r = Register.fresh () in
-    Hashtbl.add ctx v.Ast.v_name r;
-    r
-  in
   let print_register = Register.fresh () in
   let print_var = {
     v_name = name ^ "var";
@@ -609,11 +600,6 @@ let rec add_macro name body =
 
 (* TODO: factor with previous function *)
 let rec add_macro_2_vars name body =
-  let r_arg ctx v =
-    let r = Register.fresh () in
-    Hashtbl.add ctx v.Ast.v_name r;
-    r
-  in
   let reg_1 = Register.fresh () in
   let reg_2 = Register.fresh () in
   let var_1 = {
