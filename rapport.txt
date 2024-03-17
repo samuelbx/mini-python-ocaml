@@ -21,9 +21,10 @@ Les wrappers __print__ et __len__ sont définis à ce moment-là :
 ils se chargent d'adapter leur comportement en fonction du type de la variable au runtime.
 
 Fonctionnalités manquantes :
-  [+] addition de string ou de listes
-  [+] table de vérité complète pour les non-booléens
-  [+] pretty-print des listes (qui sont pour l'instant affichées élément par élément avec \n)
+  [-] opérations sur les booléens (dommage !)
+  [-] erreur pour indices négatifs dans les listes
+  [-] table de vérité complète pour les non-booléens
+  [-] wrapper my_malloc (mais on n'a pas eu de souci)
 
 Pour ce qui suit :
 
@@ -35,5 +36,6 @@ et coloration du graphe). Nous espérons que cela ne nous portera pas trop préj
 4. ERTL [ertl.ml]
 
 5. LTL [ltl.ml]
+  - Ligne 112 : fix pour retourner 0 en exit value si on est la fonction main 
 
 6. Linéarisation [lin.ml]
