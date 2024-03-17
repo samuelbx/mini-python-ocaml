@@ -107,7 +107,12 @@ let ertl_fun fn =
     | [] -> label
   in
   let first_restore_register_lb = restore_register Register.callee_saved delete_frame_lb in
-  let result_copy = Embinop (Mmov, fn.Rtltree.fun_result, Register.result, first_restore_register_lb) in
+  let result_copy =
+    if fn.fun_name = "main" then
+      Econst (Cint 0L, Register.result, first_restore_register_lb)
+    else
+      Embinop (Mmov, fn.Rtltree.fun_result, Register.result, first_restore_register_lb)
+    in
   graph := Label.M.add fn.Rtltree.fun_exit result_copy !graph;
   {
     fun_name = fn.Rtltree.fun_name;

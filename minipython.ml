@@ -52,6 +52,7 @@ let () =
 
     let rtl = Rtl.file f in
     if debug then print_endline "\n::::: RTL :::::";
+    Rtltree.print_rtlfile std_formatter rtl;
 
     let ertl = Ertl.file rtl in
     if debug then print_endline "\n::::: ERTL :::::";
