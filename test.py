@@ -1,7 +1,4 @@
-def fact(n):
-  if n == 0:
-    return 1
-  else:
-    return n*fact(n-1)
-
-print(fact(5))
+print(True and False)
+print(True and True)
+print(False or False)
+print(False or True)

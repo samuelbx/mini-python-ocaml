@@ -162,22 +162,22 @@ and rtl_binop b e1 e2 ctx ld rd =
   | Band ->
       let r_e1 = Register.fresh () in
       let r_e2 = Register.fresh () in
-      let l_cpy_result = add_to_cfg (Embinop (Ops.Mmov, r_e2, rd, ld)) in
+      let l_cpy_result = alloc_bool r_e2 rd ld in
       let l_test_e2 = add_to_cfg (Emunop (Ops.Msetnei 0L, r_e2, l_cpy_result)) in
       let l_calc_e2 = rtl_expr_val e2 ctx l_test_e2 r_e2 in
-      let l_ret_false = add_to_cfg (Econst (Cint 0L, rd, ld)) in
+      let l_ret_false = alloc_bool r_e1 rd ld in
       let l_test_e1 = add_to_cfg (Emubranch (Ops.Mjnz, r_e1, l_calc_e2, l_ret_false)) in
       let l_calc_e1 = rtl_expr_val e1 ctx l_test_e1 r_e1 in
       l_calc_e1
   | Bor ->
-      let r_e1 = Register.fresh () in
-      let r_e2 = Register.fresh () in
-      let l_cpy_result = add_to_cfg (Embinop (Ops.Mmov, r_e2, rd, ld)) in
-      let l_test_e2 = add_to_cfg (Emunop (Ops.Msetnei 0L, r_e2, l_cpy_result)) in
-      let l_calc_e2 = rtl_expr_val e2 ctx l_test_e2 r_e2 in
-      let l_ret_false = add_to_cfg (Econst (Cint 1L, rd, ld)) in
-      let l_test_e1 = add_to_cfg (Emubranch (Ops.Mjz, r_e1, l_calc_e2, l_ret_false)) in
-      let l_calc_e1 = rtl_expr_val e1 ctx l_test_e1 r_e1 in
+      let r_v1 = Register.fresh () in
+      let r_v2 = Register.fresh () in
+      let l_cpy_result = alloc_bool r_v2 rd ld in
+      let l_test_e2 = add_to_cfg (Emunop (Ops.Msetnei 0L, r_v2, l_cpy_result)) in
+      let l_calc_e2 = rtl_expr_val e2 ctx l_test_e2 r_v2 in
+      let l_ret_false = alloc_bool r_v1 rd ld in
+      let l_test_e1 = add_to_cfg (Emubranch (Ops.Mjz, r_v1, l_calc_e2, l_ret_false)) in
+      let l_calc_e1 = rtl_expr_val e1 ctx l_test_e1 r_v1 in
       l_calc_e1
 
 and rtl_call fn params ctx ld rd =
