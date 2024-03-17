@@ -51,15 +51,8 @@ let () =
     if !type_only then exit 0;
 
     let rtl = Rtl.file f in
-    if debug then print_endline "\n::::: RTL :::::";
-    Rtltree.print_rtlfile std_formatter rtl;
-
     let ertl = Ertl.file rtl in
-    if debug then print_endline "\n::::: ERTL :::::";
-
     let ltl = Ltl.file ertl in
-    if debug then print_endline "\n::::: LTL :::::";
-
     let code = Lin.file ltl in
 
     let c = open_out (Filename.chop_suffix file ".py" ^ ".s") in

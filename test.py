@@ -1,7 +1,8 @@
-def fact(n):
-  if n == 0:
-    return 1
-  else:
-    return n*fact(n-1)
+def f(i, j):
+    if i >= j:
+        return []
+    return [i] + f(i+1, j)
 
-print(fact(5))
+print([] + [])
+print([1,2] + [3,4,5])
+print(f(4, 7))
