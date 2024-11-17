@@ -28,10 +28,9 @@ Fonctionnalités manquantes :
 
 Pour ce qui suit :
 
-Faute de temps (nous sommes des élèves du PA MAP avec beaucoup d'autres partiels à préparer),
-nous nous sommes (très fortement) basés sur le code github.com/AmaurX/INF564 de mini-c 
-pour la structure globale des fichiers et les algorithmes mis en œuvre (analyse du temps de vie
-et coloration du graphe). Nous espérons que cela ne nous portera pas trop préjudice...
+Faute de temps, nous nous sommes (très fortement) basés sur le code github.com/AmaurX/INF564 de
+mini-c pour la structure globale des fichiers et les algorithmes mis en œuvre (analyse du temps
+de vie et coloration du graphe).
 
 4. ERTL [ertl.ml]
 
